@@ -1,0 +1,6 @@
+include ':app', ':encoder', ':rtmp', 'rtsp', ':rtplibrary', ':pluginlibrary'
+project(':encoder').projectDir = new File(settingsDir, 'pedroLibrary/encoder')
+project(':rtmp').projectDir = new File(settingsDir, 'pedroLibrary/rtmp')
+project(':rtsp').projectDir = new File(settingsDir, 'pedroLibrary/rtsp')
+project(':rtplibrary').projectDir = new File(settingsDir, 'pedroLibrary/rtplibrary')
+project(':pluginlibrary').projectDir = new File(settingsDir, 'pluginsdk/pluginlibrary')

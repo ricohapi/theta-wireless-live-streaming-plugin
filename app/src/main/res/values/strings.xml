@@ -1,0 +1,4 @@
+<resources>
+  <string name="app_name">Wireless Live Streaming</string>
+  <string name="keystore_pass">password</string>
+</resources>
