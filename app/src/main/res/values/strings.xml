@@ -1,0 +1,12 @@
+<resources>
+  <string name="app_name">Wireless Live Streaming</string>
+  <string name="keystore_pass">password</string>
+  <string name="oled_middle">Wireless Live Streaming</string>
+  <string name="oled_bottom_ready">STREAMING STANDBY</string>
+  <string name="oled_bottom_streaming">STREAMING</string>
+  <string name="oled_bottom_error_connection">CONNECTION FAILED</string>
+  <string name="oled_bottom_error_setting">ENTER STREAMING INFO</string>
+  <string name="oled_bottom_error_timeout">CONNECTION TIMEOUT</string>
+  <string name="oled_bottom_error_initialize">INITIALIZE FAILED</string>
+  <string name="oled_bottom_error_unexpected">AN UNEXPECTED ERROR: </string>
+</resources>

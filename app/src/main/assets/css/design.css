@@ -1,0 +1,302 @@
+﻿/**
+ * 要素指定
+ */
+
+body {
+    background-color: #f0f0f0;
+    width: 1000px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+/**
+ * class指定
+ */
+
+ .status_img {
+     vertical-align: middle;
+     margin-top: -10px;
+     margin-right: 16px;
+ }
+
+.unit_box {
+    background-color: #ffffff;
+}
+
+.settings_name {
+    margin: 0px;
+    padding: 0px 0px 0px 25px;
+    position:relative;
+    height: 41px;
+}
+
+.settings_name_label {
+    font-size: 14pt;
+    position: absolute;
+    bottom: 0px;
+}
+
+.settings_item {
+    margin: 0px;
+    padding: 0px 25px 0px 25px;
+    margin : 2px 0px;
+}
+
+.settings_item_input {
+    width: 100%;
+    height: 30px;
+    font-size: 14pt;
+}
+
+.height_5 {
+    height: 5px;
+    margin: 0px;
+}
+
+.select_bitrate {
+    padding-right: 0px;
+    width: 224px;
+}
+
+/**
+ * id指定
+ */
+
+#title_box {
+    padding-top: 20px;
+    height: 29px;
+    padding-bottom: 5px;
+}
+
+#title {
+    height: 29px;
+    width: auto;
+}
+
+#head_box {
+    height: 84px;
+    margin-bottom: 12px;
+    position: relative;
+}
+
+#main_box {
+}
+
+#main_left_box {
+    display: inline-block;
+    vertical-align: top;
+    width: 39%;
+}
+
+#main_right_box {
+    display: inline-block;
+    vertical-align: top;
+    width: 59.8%;
+    height: 482px;
+    float: right;
+    position: relative;
+}
+
+#youtube_box {
+    height: 178px;
+    margin-bottom: 12px;
+}
+
+#settings_box {
+    height: 240px;
+    margin-bottom: 12px;
+}
+
+#img_box {
+}
+
+#operate_theta {
+    padding-top: 15px;
+    height: 40px;
+}
+
+#status_box {
+    display: inline-block;
+    margin-left: 30px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+#status_img_2 {
+    animation: blinkAnime 0.5s infinite alternate;
+}
+@keyframes blinkAnime{
+    0% { opacity: 0 }
+    100% { opacity: 1 }
+}
+
+#status_label {
+    font-size: 24pt;
+}
+
+#stream_button_box {
+    display: inline-block;
+    float: right;
+    margin-right: 15px;
+}
+
+#stream_start_button {
+    color: #ffffff;
+    background-color: #007aff;
+    border: 0px solid;
+    width: 250px;
+    height: 40px;
+    font-size: 18pt;
+}
+
+#stream_start_button:hover {
+    background-color: #6ab1ff;
+}
+
+#stream_start_button:focus {
+    outline: 0px;
+    background-color: #0054af;
+}
+
+#stream_start_button:disabled {
+    opacity: 0.3;
+}
+
+#stream_stop_button {
+    color: #f23b1c;
+    background-color: #ffffff;
+    border: 2px solid;
+    border-color: #f23b1c;
+    width: 250px;
+    height: 40px;
+    font-size: 18pt;
+}
+
+#stream_stop_button:hover {
+    color: #f9826d;
+    border-color: #f9826d;
+}
+
+#stream_stop_button:focus {
+    outline: 0px;
+    background-color: #e7e7e7;
+}
+
+#stream_stop_button:disabled {
+    opacity: 0.3;
+}
+
+#description {
+    margin: 0px;
+    padding: 5px 15px 0px 0px;
+    text-align: right;
+}
+
+#description_label {
+    font-size: 12pt;
+}
+
+#bitrate_box {
+    position: relative;
+}
+
+#bitrate_auto_img_box {
+    position: absolute;
+    bottom: 10.5pt;
+    right: 0px;
+    margin-right: 25px;
+    transform: translateY(50%);
+}
+
+#bitrate_table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+#bitrate_table td {
+    padding: 0px;
+}
+
+#bitrate_table_measure_td {
+    padding-left: 6px !important;
+}
+
+#auto_bitrate_button {
+    padding-left: 6px;
+    width: 110px;
+    height: 30px;
+    background-color: #ffffff;
+    border: 0.1px solid #aaaaaa;
+    font-size: 14pt;
+}
+
+#auto_bitrate_button:disabled {
+    opacity: 0.3;
+}
+
+#submit_button_box {
+}
+
+#submit_button {
+    width: 100%;
+    color: #007aff;
+    background-color: #ffffff;
+    border-color: #007aff;
+    border: 2px solid;
+    height: 40px;
+    font-size: 14pt;
+}
+
+#submit_button:hover {
+    color: #6ab1ff;
+    border-color: #6ab1ff;
+}
+
+#submit_button:focus {
+    outline: 0px;
+    background-color: #e7e7e7;
+}
+
+#submit_button:disabled {
+    opacity: 0.3;
+}
+
+#theta_img {
+    display: block;
+    margin: 12px 15px 0px 15px;
+}
+
+#led_info_table {
+    text-align: center;
+    margin: auto;
+    border-collapse: collapse;
+    width: 586px;
+    position: absolute;
+    bottom: 0px;
+    margin: 0px 6px;
+}
+
+#led_info_table th {
+     border-bottom: 2px solid;
+     border-color: #c8c8c8;
+     font-size: 14pt;
+}
+
+#led_info_table td {
+     border-top: 1px solid;
+     border-color: #c8c8c8;
+     font-size: 12pt;
+}
+
+#led_info_video {
+    height: 37px;
+}
+
+#led_info_live {
+    height: 37px;
+}
+
+#led_info_error {
+    height: 39px;
+}
