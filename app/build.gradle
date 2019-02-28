@@ -28,6 +28,11 @@ android {
     lintOptions {
         abortOnError false
     }
+    android.applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "wirelessLiveStreaming_v${android.defaultConfig.versionName}_${variant.name}.apk"
+        }
+    }
 }
 
 dependencies {
