@@ -20,7 +20,6 @@ package com.theta360.cloudstreaming.httpserver;
 import static fi.iki.elonen.NanoHTTPD.Response.Status.NOT_FOUND;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -59,7 +58,7 @@ import timber.log.Timber;
 /**
  * Provide web server function
  */
-public class AndroidWebServer extends Activity {
+public class AndroidWebServer {
 
     public static final int PRIMARY_KEY_ID = 1;
 

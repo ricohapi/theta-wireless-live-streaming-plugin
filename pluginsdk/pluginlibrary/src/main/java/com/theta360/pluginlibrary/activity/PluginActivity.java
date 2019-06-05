@@ -18,6 +18,13 @@ package com.theta360.pluginlibrary.activity;
 
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -34,6 +41,10 @@ import com.theta360.pluginlibrary.values.LedTarget;
  * PluginActivity
  */
 public abstract class PluginActivity extends AppCompatActivity {
+    private static final String RECEPTOR = "com.theta360.receptor";
+    private static final String MODEL_V = "RICOH THETA V";
+    private static final String MODEL_Z1 = "RICOH THETA Z1";
+
     private static final String ACTION_MAIN_CAMERA_CLOSE = "com.theta360.plugin.ACTION_MAIN_CAMERA_CLOSE";
     private static final String ACTION_MAIN_CAMERA_OPEN = "com.theta360.plugin.ACTION_MAIN_CAMERA_OPEN";
     private static final String ACTION_FINISH_PLUGIN = "com.theta360.plugin.ACTION_FINISH_PLUGIN";
@@ -64,7 +75,15 @@ public abstract class PluginActivity extends AppCompatActivity {
     private static final String ACTION_DATABASE_UPDATE = "com.theta360.plugin.ACTION_DATABASE_UPDATE";
     private static final String TARGETS = "targets";
 
+    private static final String ACTION_OLED_IMAGE_BLINK = "com.theta360.plugin.ACTION_OLED_IMAGE_BLINK";
+    private static final String BITMAP = "bitmap";
+    private static final String ACTION_OLED_TEXT_SHOW = "com.theta360.plugin.ACTION_OLED_TEXT_SHOW";
+    private static final String TEXT_MIDDLE = "text-middle";
+    private static final String TEXT_BOTTOM = "text-bottom";
+    private static final String ACTION_OLED_HIDE = "com.theta360.plugin.ACTION_OLED_HIDE";
+
     private boolean isCamera = false;
+    private boolean isAutoClose = true;
     private KeyCallback mKeyCallback;
     private KeyReceiver mKeyReceiver;
     private KeyReceiver.Callback onKeyReceiver = new KeyReceiver.Callback() {
@@ -75,10 +94,9 @@ public abstract class PluginActivity extends AppCompatActivity {
                 if (mKeyCallback != null) {
                     mKeyCallback.onKeyLongPress(keyCode, event);
                 }
-                if (isCamera) {
-                    notificationCameraOpen();
+                if (isAutoClose) {
+                    close();
                 }
-                notificationSuccess();
             } else {
                 if (mKeyCallback != null) {
                     if (event.getRepeatCount() == 0) {
@@ -102,12 +120,12 @@ public abstract class PluginActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); // Fix to be portrait
         UncaughtException uncaughtException = new UncaughtException(getApplicationContext(),
                 new Callback() {
                     @Override
                     public void onException(String message) {
                         notificationError(message);
-                        finish();
                     }
                 });
         Thread.setDefaultUncaughtExceptionHandler(uncaughtException);
@@ -133,6 +151,25 @@ public abstract class PluginActivity extends AppCompatActivity {
 
     public void setKeyCallback(KeyCallback keyCallback) {
         mKeyCallback = keyCallback;
+    }
+
+    /**
+     * Auto close setting
+     *
+     * @param autoClose true : auto close / false : not auto close
+     */
+    public void setAutoClose(boolean autoClose) {
+        isAutoClose = autoClose;
+    }
+
+    /**
+     * End processing
+     */
+    public void close() {
+        if (isCamera) {
+            notificationCameraOpen();
+        }
+        notificationSuccess();
     }
 
     public void notificationCameraOpen() {
@@ -197,13 +234,13 @@ public abstract class PluginActivity extends AppCompatActivity {
     /**
      * Turn on LED3 with color
      *
-     * @param ledTarget target LED
+     * @param ledColor target LED
      */
     public void notificationLed3Show(@NonNull LedColor ledColor) {
-       Intent intent = new Intent(ACTION_LED_SHOW);
-       intent.putExtra(TARGET, LedTarget.LED3.toString());
-       intent.putExtra(COLOR, ledColor.toString());
-       sendBroadcast(intent);
+        Intent intent = new Intent(ACTION_LED_SHOW);
+        intent.putExtra(TARGET, LedTarget.LED3.toString());
+        intent.putExtra(COLOR, ledColor.toString());
+        sendBroadcast(intent);
     }
 
     /**
@@ -275,6 +312,47 @@ public abstract class PluginActivity extends AppCompatActivity {
         sendBroadcast(intent);
     }
 
+    public void notificationOledImageBlink(int id, int period) {
+        if (period < 250) {
+            period = 250;
+        }
+        if (period > 2000) {
+            period = 2000;
+        }
+
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inScaled = false;
+        Bitmap bitmap = BitmapFactory
+                .decodeResource(getResources(), id, options);
+
+        notificationOledImageBlink(bitmap, period);
+    }
+
+    public void notificationOledImageBlink(Bitmap bitmap, int period) {
+        if (period < 250) {
+            period = 250;
+        }
+        if (period > 2000) {
+            period = 2000;
+        }
+
+        Intent intent = new Intent(ACTION_OLED_IMAGE_BLINK);
+        intent.putExtra(BITMAP, bitmap);
+        intent.putExtra(PERIOD, period);
+        sendBroadcast(intent);
+    }
+
+    public void notificationOledTextShow(String middle, String bottom) {
+        Intent intent = new Intent(ACTION_OLED_TEXT_SHOW);
+        intent.putExtra(TEXT_MIDDLE, middle);
+        intent.putExtra(TEXT_BOTTOM, bottom);
+        sendBroadcast(intent);
+    }
+
+    public void notificationOledHide() {
+        sendBroadcast(new Intent(ACTION_OLED_HIDE));
+    }
+
     /**
      * Notifying Completion of Plug-in when the plug-in ends normally
      */
@@ -283,7 +361,7 @@ public abstract class PluginActivity extends AppCompatActivity {
         intent.putExtra(PACKAGE_NAME, getPackageName());
         intent.putExtra(EXIT_STATUS, ExitStatus.SUCCESS.toString());
         sendBroadcast(intent);
-        finish();
+        finishAndRemoveTask();
     }
 
     /**
@@ -297,7 +375,7 @@ public abstract class PluginActivity extends AppCompatActivity {
         intent.putExtra(EXIT_STATUS, ExitStatus.FAILURE.toString());
         intent.putExtra(MESSAGE, message);
         sendBroadcast(intent);
-        finish();
+        finishAndRemoveTask();
     }
 
     /**
@@ -305,5 +383,27 @@ public abstract class PluginActivity extends AppCompatActivity {
      */
     public void notificationErrorOccured() {
         sendBroadcast(new Intent(ACTION_ERROR_OCCURED));
+    }
+
+    public boolean isZ1() {
+        if (Build.MODEL.equals(MODEL_Z1)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public int getReceptorVersion() {
+        try {
+            PackageInfo packageInfo = getPackageManager()
+                    .getPackageInfo(RECEPTOR, PackageManager.GET_META_DATA);
+            if (packageInfo != null) {
+                return packageInfo.versionCode;
+            }
+        } catch (NameNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        return 0;
     }
 }

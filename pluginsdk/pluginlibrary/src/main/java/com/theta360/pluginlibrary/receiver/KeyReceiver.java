@@ -29,6 +29,7 @@ public class KeyReceiver extends BroadcastReceiver {
     public static final int KEYCODE_CAMERA = 27;
     public static final int KEYCODE_MEDIA_RECORD = 130;
     public static final int KEYCODE_WLAN_ON_OFF = 284;
+    public static final int KEYCODE_FUNCTION = 119;
 
     public static final String ACTION_KEY_DOWN = "com.theta360.plugin.ACTION_KEY_DOWN";
     public static final String ACTION_KEY_UP = "com.theta360.plugin.ACTION_KEY_UP";

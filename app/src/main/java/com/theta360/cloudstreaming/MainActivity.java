@@ -169,7 +169,9 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         etUrl = findViewById(R.id.et_rtp_url);
 
         // Initialize LED
-        notificationLedHide(LedTarget.LED4); // カメラ
+        if (isZ1()) {
+            notificationLedHide(LedTarget.LED4); // camera
+        }
         changeStartupLED();
 
         // Update the status of THETA
@@ -281,14 +283,12 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                 shutDownTimer.reset(false, noOperationTimeoutMSec);
                 stopStreaming();
 
+                updateStatus(StatusType.ERROR_CONNECT_SERVER);
                 if (System.currentTimeMillis() - lastConnectionFailedErrorTime > CONNECTION_FAILED_INTERVAL_MSEC) {
                     lastConnectionFailedErrorTime = System.currentTimeMillis();
                     playPPPSoundWithErrorLED();
-                } else {
-                    changeReadyLED();
                 }
                 settingPolling.changeStart();
-                updateStatus(StatusType.ERROR_CONNECT_SERVER);
             }
         });
     }
@@ -435,9 +435,9 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
             // Confirm user's setting
             if (!settingFix) {
                 // No settings
+                updateStatus(StatusType.ERROR_NOT_USER_SETTING);
                 playPPPSoundWithErrorLED();
                 settingPolling.changeStart();
-                updateStatus(StatusType.ERROR_NOT_USER_SETTING);
                 return;
             }
             int movieW = settingData.getMovieWidth();
@@ -481,8 +481,8 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                 }
             } else {
                 // Any hardware issues
-                playPPPSoundWithErrorLED();
                 updateStatus(StatusType.ERROR_INITIALIZATION);
+                playPPPSoundWithErrorLED();
                 Timber.e("Failed to initialize audio or camera.");
             }
         }
@@ -509,32 +509,48 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
     }
 
     private void changeStartupLED() {
-        notificationLedHide(LedTarget.LED5); // Video
-        notificationLedHide(LedTarget.LED6); // LIVE
-        notificationLedHide(LedTarget.LED7); // Recording
-        notificationLedHide(LedTarget.LED8); // Error
+        if (isZ1()) {
+            notificationOledHide();
+            notificationOledTextShow(getString(R.string.oled_middle), "");
+        } else {
+            notificationLedHide(LedTarget.LED5); // Video
+            notificationLedHide(LedTarget.LED6); // LIVE
+            notificationLedHide(LedTarget.LED7); // Recording
+            notificationLedHide(LedTarget.LED8); // Error
+        }
     }
 
     private void changeReadyLED() {
-        notificationLedShow(LedTarget.LED5); // Video
-        notificationLedShow(LedTarget.LED6); // LIVE
-        notificationLedHide(LedTarget.LED7); // Recording
-        notificationLedHide(LedTarget.LED8); // Error
+        if (isZ1()) {
+            notificationOledTextShow(getString(R.string.oled_middle), getString(R.string.oled_bottom_ready));
+        } else {
+            notificationLedShow(LedTarget.LED5); // Video
+            notificationLedShow(LedTarget.LED6); // LIVE
+            notificationLedHide(LedTarget.LED7); // Recording
+            notificationLedHide(LedTarget.LED8); // Error
+        }
     }
 
     private void changeStreamingLED() {
-        notificationLedShow(LedTarget.LED5); // Video
-        notificationLedShow(LedTarget.LED6); // LIVE
-        notificationLedBlink(LedTarget.LED7, LedColor.BLUE, 1000); // Recording
-        notificationLedHide(LedTarget.LED8); // Error
-
+        if (isZ1()) {
+            notificationOledTextShow(getString(R.string.oled_middle), getString(R.string.oled_bottom_streaming));
+        } else {
+            notificationLedShow(LedTarget.LED5); // Video
+            notificationLedShow(LedTarget.LED6); // LIVE
+            notificationLedBlink(LedTarget.LED7, LedColor.BLUE, 1000); // Recording
+            notificationLedHide(LedTarget.LED8); // Error
+        }
     }
 
     private void changeDelayStreamingLED() {
-        notificationLedShow(LedTarget.LED5); // Video
-        notificationLedShow(LedTarget.LED6); // LIVE
-        notificationLedBlink(LedTarget.LED7, LedColor.BLUE, 1000); // Recording
-        notificationLedBlink(LedTarget.LED8, LedColor.BLUE, 1000); // Error
+        if (isZ1()) {
+            notificationOledTextShow(getString(R.string.oled_middle), getString(R.string.oled_bottom_streaming));
+        } else {
+            notificationLedShow(LedTarget.LED5); // Video
+            notificationLedShow(LedTarget.LED6); // LIVE
+            notificationLedBlink(LedTarget.LED7, LedColor.BLUE, 1000); // Recording
+            notificationLedBlink(LedTarget.LED8, LedColor.BLUE, 1000); // Error
+        }
     }
 
     private void changeErrorLED() {
@@ -545,18 +561,26 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
     }
 
     private void changeEndLED() {
-        notificationLedHide(LedTarget.LED5); // Video
-        notificationLedHide(LedTarget.LED6); // LIVE
-        notificationLedHide(LedTarget.LED7); // Recording
-        notificationLedHide(LedTarget.LED8); // Error
+        if (isZ1()) {
+            notificationOledHide();
+        } else {
+            notificationLedHide(LedTarget.LED5); // Video
+            notificationLedHide(LedTarget.LED6); // LIVE
+            notificationLedHide(LedTarget.LED7); // Recording
+            notificationLedHide(LedTarget.LED8); // Error
+        }
     }
 
     /**
      * PPP(Error) sound playback and error LED control
      */
     private void playPPPSoundWithErrorLED() {
-        notificationAudioWarning();
-        changeErrorLED();
+        if (isZ1()) {
+            notificationErrorOccured();
+        } else {
+            notificationAudioWarning();
+            changeErrorLED();
+        }
     }
 
     /**
@@ -869,11 +893,11 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                                         public void run() {
                                             // Read and adapt the user's settings.
                                             etUrl.setText(settingData.getServerUrl() + "/" + settingData.getStreamName());
-                                            ((TextView) findViewById(R.id.txtwidth)).setText(String.valueOf(settingData.getMovieWidth()));   // 解像度 横
-                                            ((TextView) findViewById(R.id.txtheight)).setText(String.valueOf(settingData.getMovieHeight()));  // 解像度 縦
-                                            ((TextView) findViewById(R.id.txtframe)).setText(String.valueOf((int) settingData.getFps()));     // フレームレート
-                                            ((TextView) findViewById(R.id.txtbitrate)).setText(String.valueOf(settingData.getBitRate()));   // ビットレート
-                                            ((TextView) findViewById(R.id.textNoOperationTimeoutMinute)).setText(String.valueOf(settingData.getNoOperationTimeoutMinute()));   // 無操作タイムアウト秒
+                                            ((TextView) findViewById(R.id.txtwidth)).setText(String.valueOf(settingData.getMovieWidth()));
+                                            ((TextView) findViewById(R.id.txtheight)).setText(String.valueOf(settingData.getMovieHeight()));
+                                            ((TextView) findViewById(R.id.txtframe)).setText(String.valueOf((int) settingData.getFps()));
+                                            ((TextView) findViewById(R.id.txtbitrate)).setText(String.valueOf(settingData.getBitRate()));
+                                            ((TextView) findViewById(R.id.textNoOperationTimeoutMinute)).setText(String.valueOf(settingData.getNoOperationTimeoutMinute()));
                                         }
                                     });
 
@@ -946,7 +970,6 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                         Timber.i("DelaySecond is " + String.valueOf(delaySecond) + " at DelayJudgment");
 
                         if (delaySecond > DELAY_JUDGEMENT_THRESHOLD) {
-                            // 遅延
                             Timber.i("Live Streaming is Delay");
                             changeDelayStreamingLED();
                         } else {
@@ -967,6 +990,22 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         ContentValues values = new ContentValues();
         values.put("status", status.getCode());
         dbObject.update("theta360_setting", values, "id=?", new String[]{String.valueOf(PRIMARY_KEY_ID)});
+        if (isZ1()) {
+            switch(status) {
+                case ERROR_CONNECT_SERVER:
+                    notificationOledTextShow(getString(R.string.oled_middle), getString(R.string.oled_bottom_error_connection));
+                    break;
+                case ERROR_NOT_USER_SETTING:
+                    notificationOledTextShow(getString(R.string.oled_middle), getString(R.string.oled_bottom_error_setting));
+                    break;
+                case TIMEOUT:
+                    notificationOledTextShow(getString(R.string.oled_middle), getString(R.string.oled_bottom_error_timeout));
+                    break;
+                case ERROR_INITIALIZATION:
+                    notificationOledTextShow(getString(R.string.oled_middle), getString(R.string.oled_bottom_error_initialize));
+                    break;
+            }
+        }
     }
 
     /**
@@ -976,6 +1015,10 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         ContentValues values = new ContentValues();
         values.put("status", String.format("(%s)", errorCode));
         dbObject.update("theta360_setting", values, "id=?", new String[]{String.valueOf(PRIMARY_KEY_ID)});
+        if (isZ1()) {
+            notificationOledTextShow(getString(R.string.oled_middle), getString(R.string.oled_bottom_error_unexpected) + errorCode);
+        }
+        playPPPSoundWithErrorLED();
     }
 
 }

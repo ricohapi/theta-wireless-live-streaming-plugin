@@ -17,3 +17,6 @@ build/
 
 .DS_Store
 /captures
+
+/apk
+/app/release
