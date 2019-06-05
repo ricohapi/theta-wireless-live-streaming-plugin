@@ -8,8 +8,8 @@ android {
         applicationId "com.theta360.cloudstreaming"
         minSdkVersion Integer.parseInt(project.ANDROID_BUILD_MIN_SDK_VERSION)
         targetSdkVersion Integer.parseInt(project.ANDROID_BUILD_TARGET_SDK_VERSION)
-        versionCode 2
-        versionName "1.0.9"
+        versionCode 3
+        versionName "1.1.1"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
@@ -27,6 +27,11 @@ android {
     }
     lintOptions {
         abortOnError false
+    }
+    android.applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "wirelessLiveStreaming_v${android.defaultConfig.versionName}_${variant.name}.apk"
+        }
     }
 }
 
