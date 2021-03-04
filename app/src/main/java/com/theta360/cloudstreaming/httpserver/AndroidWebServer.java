@@ -438,7 +438,11 @@ public class AndroidWebServer extends Activity {
             } else if (uri.endsWith(".svg") || uri.endsWith(".SVG")) {
                 return newChunkedResponse(Status.OK, "image/svg+xml", fis);
             } else if (uri.endsWith(".js")) {
-                return newChunkedResponse(Status.OK, "application/javascript", fis);
+                Response res= newChunkedResponse(Status.OK, "application/javascript", fis);
+                res.addHeader("X-XSS-Protection", "1; mode=block");
+                res.addHeader("Content-Security-Policy", "default-src 'self'; frame-ancestors 'self'");
+                res.addHeader("X-Frame-Options", "SAMEORIGIN");
+                return res;
             } else if (uri.endsWith(".properties")) {
                 return newChunkedResponse(Status.OK, "text/html", fis);
             } else if (uri.endsWith(".css")) {
@@ -511,7 +515,11 @@ public class AndroidWebServer extends Activity {
                     e.printStackTrace();
                 }
 
-                return newChunkedResponse(Status.OK, "text/html", destInputStream);
+                Response res = newChunkedResponse(Status.OK, "text/html", destInputStream);
+                res.addHeader("X-XSS-Protection", "1; mode=block");
+                res.addHeader("Content-Security-Policy", "default-src 'self'; frame-ancestors 'self'");
+                res.addHeader("X-Frame-Options", "SAMEORIGIN");
+                return res;
             } else if (uri.endsWith(".json")) {
 
                 // Read data from DB
