@@ -528,9 +528,42 @@ public class AndroidWebServer extends Activity {
 
                 return newChunkedResponse(Status.OK, "application/json", destInputStream);
             } else {
-                return newFixedLengthResponse(NOT_FOUND, "text/plain", uri);
+                return newFixedLengthResponse(NOT_FOUND, "text/plain", "");
             }
         }
+
+
+        /**
+         * Escape XSS attack
+         */
+        private String prevent_xss(String str){
+            StringBuffer safeStr = new StringBuffer();
+            for(int i=0; i < str.length(); i++) {
+                char c = str.charAt(i);
+                switch (c) {
+                    case '&':
+                        safeStr.append("&amp;");
+                        break;
+                    case '<':
+                        safeStr.append("&lt;");
+                        break;
+                    case '>':
+                        safeStr.append("&gt;");
+                        break;
+                    case '\"':
+                        safeStr.append("&quot;");
+                        break;
+                    case '\'':
+                        safeStr.append("&#x27;");
+                        break;
+                    default:
+                        safeStr.append(c);
+                        break;
+                }
+            }
+            return safeStr.toString();
+        }
+
 
         /**
          * Read configuration data from DB and return
@@ -542,14 +575,14 @@ public class AndroidWebServer extends Activity {
             try {
                 settingData = new SettingData();
                 if (cursor.moveToNext()) {
-                    settingData.setServerUrl(cursor.getString(cursor.getColumnIndex("server_url")));
-                    settingData.setStreamName(cursor.getString(cursor.getColumnIndex("stream_name")));
+                    settingData.setServerUrl(prevent_xss(cursor.getString(cursor.getColumnIndex("server_url"))));
+                    settingData.setStreamName(prevent_xss(cursor.getString(cursor.getColumnIndex("stream_name"))));
                     settingData.setCryptText(cursor.getString(cursor.getColumnIndex("crypt_text")));
                     settingData.setMovieWidth(cursor.getInt(cursor.getColumnIndex("movie_width")));
                     settingData.setMovieHeight(cursor.getInt(cursor.getColumnIndex("movie_height")));
                     settingData.setFps(cursor.getDouble(cursor.getColumnIndex("fps")));
-                    settingData.setBitRate(cursor.getString(cursor.getColumnIndex("bitrate")));
-                    settingData.setAutoBitRate(cursor.getString(cursor.getColumnIndex("auto_bitrate")));
+                    settingData.setBitRate(prevent_xss(cursor.getString(cursor.getColumnIndex("bitrate"))));
+                    settingData.setAutoBitRate(prevent_xss(cursor.getString(cursor.getColumnIndex("auto_bitrate"))));
                     settingData.setNoOperationTimeoutMinute(cursor.getInt(cursor.getColumnIndex("no_operation_timeout_minute")));
                     settingData.setStatus(cursor.getString(cursor.getColumnIndex("status")));
                 }
