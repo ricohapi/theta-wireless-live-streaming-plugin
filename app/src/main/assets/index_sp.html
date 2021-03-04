@@ -86,10 +86,10 @@
           });
 
           /* Changed bit rate options according to picture quality */
-          var bitrate_4k_val = $('#bitrate4k').val();
-          var bitrate_2k_val = $('#bitrate2k').val();
-          var bitrate_1k_val = $('#bitrate1k').val();
-          var bitrate_06k_val = $('#bitrate06k').val();
+          var bitrate_4k_val = prevent_xss($('#bitrate4k').val());
+          var bitrate_2k_val = prevent_xss($('#bitrate2k').val());
+          var bitrate_1k_val = prevent_xss($('#bitrate1k').val());
+          var bitrate_06k_val = prevent_xss($('#bitrate06k').val());
           changeMovieSize();
           $('#bitrate4k').val(bitrate_4k_val);
           $('#bitrate2k').val(bitrate_2k_val);
@@ -109,6 +109,8 @@
           }
           if (bitrate == "-1") {
               changeAutoBitrateText();
+          }else{
+            bitrate = prevent_xss(bitrate);
           }
 
           changeBitrate();
@@ -408,7 +410,7 @@
                 $("#tmp_bitrate").val($("#bitrate06k").val());
             }
 
-            var auto_bitrate = $("#auto_bitrate").val();
+            var auto_bitrate = prevent_xss($("#auto_bitrate").val());
             if (auto_bitrate != "" && auto_bitrate != "null") {
                 $("#tmp_auto_bitrate").val(auto_bitrate);
                 $("#auto_bitrate_label").text("AUTO (" + auto_bitrate + " Mbps)");
@@ -432,6 +434,7 @@
             if (measure_bitrate_flag == 1) {
                 return;
             }
+            bitrate = prevent_xss(bitrate);
             $("#tmp_bitrate").val(bitrate);
             changeBitrateCheck(bitrate);
             if (bitrate == "-1") {
@@ -460,7 +463,7 @@
         }
 
         function decideBitrate() {
-            var bitrate = $("#tmp_bitrate").val();
+            var bitrate = prevent_xss($("#tmp_bitrate").val());
             var movie = $("#movie").val();
             if (movie == 'MOVIE4K') {
                 $("#bitrate4k").val(bitrate);
@@ -511,6 +514,15 @@
             closeTimeout();
         }
 
+        function prevent_xss(string){
+          return string
+              .replace(/\&/g, '&amp;')
+              .replace(/\</g, '&lt;')
+              .replace(/\>/g, '&gt;')
+              .replace(/\"/g, '&quot;')
+              .replace(/\'/g, '&#x27;');
+        }
+
         function measure_bitrate() {
             if (measure_bitrate_flag == 1) {
                 return;
@@ -540,7 +552,7 @@
 
         function changeAutoBitrateText() {
             var movie = $('#movie').val();
-            var bitrate = $("#auto_bitrate").val();
+            var bitrate = prevent_xss($("#auto_bitrate").val());
             if(movie == 'MOVIE4K'){
                 $('#bitrate4k option[value="-1"]').text("AUTO (" + bitrate + " Mbps)");
             } else if(movie == 'MOVIE2K'){
@@ -586,14 +598,14 @@
         <div id="server_url_box" class="bottom_border">
           <div class="youtube_padding">
             <label id="server_url_label" class="i18n_SERVER_URL youtube_item_label"></label>
-            <input type='text' id="server_url_text" name='server_url' class="i18n_placeholder_INPUT_PLACEHOLDER settings_item_input">
+            <input type='text' id="server_url_text" name='server_url' onchange="this.value = prevent_xss(this.value)" class="i18n_placeholder_INPUT_PLACEHOLDER settings_item_input">
           </div>
         </div>
 
         <div id="stream_name_box">
           <div class="youtube_padding">
             <label id="stream_name_label" class="i18n_STREAM_NAME youtube_item_label"></label>
-            <input type='text' id="stream_name_text" name='stream_name' class="i18n_placeholder_INPUT_PLACEHOLDER settings_item_input">
+            <input type='text' id="stream_name_text" name='stream_name' onchange="this.value = prevent_xss(this.value)" class="i18n_placeholder_INPUT_PLACEHOLDER settings_item_input">
           </div>
         </div>
       </div>

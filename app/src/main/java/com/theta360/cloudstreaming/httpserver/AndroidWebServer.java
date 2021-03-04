@@ -438,7 +438,11 @@ public class AndroidWebServer extends Activity {
             } else if (uri.endsWith(".svg") || uri.endsWith(".SVG")) {
                 return newChunkedResponse(Status.OK, "image/svg+xml", fis);
             } else if (uri.endsWith(".js")) {
-                return newChunkedResponse(Status.OK, "application/javascript", fis);
+                Response res= newChunkedResponse(Status.OK, "application/javascript", fis);
+                res.addHeader("X-XSS-Protection", "1; mode=block");
+                res.addHeader("Content-Security-Policy", "default-src 'self'; frame-ancestors 'self'");
+                res.addHeader("X-Frame-Options", "SAMEORIGIN");
+                return res;
             } else if (uri.endsWith(".properties")) {
                 return newChunkedResponse(Status.OK, "text/html", fis);
             } else if (uri.endsWith(".css")) {
@@ -511,7 +515,11 @@ public class AndroidWebServer extends Activity {
                     e.printStackTrace();
                 }
 
-                return newChunkedResponse(Status.OK, "text/html", destInputStream);
+                Response res = newChunkedResponse(Status.OK, "text/html", destInputStream);
+                res.addHeader("X-XSS-Protection", "1; mode=block");
+                res.addHeader("Content-Security-Policy", "default-src 'self'; frame-ancestors 'self'");
+                res.addHeader("X-Frame-Options", "SAMEORIGIN");
+                return res;
             } else if (uri.endsWith(".json")) {
 
                 // Read data from DB
@@ -528,9 +536,42 @@ public class AndroidWebServer extends Activity {
 
                 return newChunkedResponse(Status.OK, "application/json", destInputStream);
             } else {
-                return newFixedLengthResponse(NOT_FOUND, "text/plain", uri);
+                return newFixedLengthResponse(NOT_FOUND, "text/plain", "");
             }
         }
+
+
+        /**
+         * Escape XSS attack
+         */
+        private String prevent_xss(String str){
+            StringBuffer safeStr = new StringBuffer();
+            for(int i=0; i < str.length(); i++) {
+                char c = str.charAt(i);
+                switch (c) {
+                    case '&':
+                        safeStr.append("&amp;");
+                        break;
+                    case '<':
+                        safeStr.append("&lt;");
+                        break;
+                    case '>':
+                        safeStr.append("&gt;");
+                        break;
+                    case '\"':
+                        safeStr.append("&quot;");
+                        break;
+                    case '\'':
+                        safeStr.append("&#x27;");
+                        break;
+                    default:
+                        safeStr.append(c);
+                        break;
+                }
+            }
+            return safeStr.toString();
+        }
+
 
         /**
          * Read configuration data from DB and return
@@ -542,14 +583,14 @@ public class AndroidWebServer extends Activity {
             try {
                 settingData = new SettingData();
                 if (cursor.moveToNext()) {
-                    settingData.setServerUrl(cursor.getString(cursor.getColumnIndex("server_url")));
-                    settingData.setStreamName(cursor.getString(cursor.getColumnIndex("stream_name")));
+                    settingData.setServerUrl(prevent_xss(cursor.getString(cursor.getColumnIndex("server_url"))));
+                    settingData.setStreamName(prevent_xss(cursor.getString(cursor.getColumnIndex("stream_name"))));
                     settingData.setCryptText(cursor.getString(cursor.getColumnIndex("crypt_text")));
                     settingData.setMovieWidth(cursor.getInt(cursor.getColumnIndex("movie_width")));
                     settingData.setMovieHeight(cursor.getInt(cursor.getColumnIndex("movie_height")));
                     settingData.setFps(cursor.getDouble(cursor.getColumnIndex("fps")));
-                    settingData.setBitRate(cursor.getString(cursor.getColumnIndex("bitrate")));
-                    settingData.setAutoBitRate(cursor.getString(cursor.getColumnIndex("auto_bitrate")));
+                    settingData.setBitRate(prevent_xss(cursor.getString(cursor.getColumnIndex("bitrate"))));
+                    settingData.setAutoBitRate(prevent_xss(cursor.getString(cursor.getColumnIndex("auto_bitrate"))));
                     settingData.setNoOperationTimeoutMinute(cursor.getInt(cursor.getColumnIndex("no_operation_timeout_minute")));
                     settingData.setStatus(cursor.getString(cursor.getColumnIndex("status")));
                 }

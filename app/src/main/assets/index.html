@@ -218,6 +218,15 @@
             }
         }
 
+        function prevent_xss(string){
+          return string
+              .replace(/\&/g, '&amp;')
+              .replace(/\</g, '&lt;')
+              .replace(/\>/g, '&gt;')
+              .replace(/\"/g, '&quot;')
+              .replace(/\'/g, '&#x27;');
+        }
+
         function measure_bitrate() {
             if (measure_bitrate_flag == 1) {
                 return;
@@ -243,7 +252,7 @@
 
         function changeAutoBitrateText() {
             var movie = $('#movie').val();
-            var bitrate = $("#auto_bitrate").val();
+            var bitrate = prevent_xss($("#auto_bitrate").val());
             if(movie == 'MOVIE4K'){
                 $('#bitrate4k option[value="-1"]').text("AUTO (" + bitrate + " Mbps)");
             } else if(movie == 'MOVIE2K'){
@@ -297,14 +306,14 @@
               <label class="i18n_SERVER_URL settings_label settings_name_label"></label>
             </p>
             <p id="server_url_input" class="settings_item">
-              <input type='text' id="server_url_text" name='server_url' class="settings_item_input">
+              <input type='text' id="server_url_text" name='server_url' onchange="this.value = prevent_xss(this.value)" class="settings_item_input">
             </p>
             <p class="height_5" ></p>
             <p class="settings_name">
               <label class="i18n_STREAM_NAME settings_label settings_name_label"></label>
             </p>
             <p id="stream_name_input" class="settings_item">
-              <input type='text' id="stream_name_text" name='stream_name' class="settings_item_input">
+              <input type="text" id="stream_name_text" name='stream_name' onchange="this.value = prevent_xss(this.value)" class="settings_item_input">
             </p>
           </div>
 
