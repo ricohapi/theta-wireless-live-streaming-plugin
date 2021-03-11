@@ -362,7 +362,12 @@ public class AndroidWebServer extends Activity {
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
-                return newChunkedResponse(Status.OK, "text/html", destInputStream);
+                Response res=newChunkedResponse(Status.OK, "text/html", destInputStream);
+                res.addHeader("X-XSS-Protection", "1; mode=block");
+                res.addHeader("Content-Security-Policy", "default-src 'self'; frame-ancestors 'self'");
+                res.addHeader("X-Frame-Options", "SAMEORIGIN");
+                res.addHeader("X-Content-Type-Options", "nosniff");
+                return res;
             } else if (uri.equals("/start_streaming")) {
                 // Start and stop streaming
                 Intent intent = new Intent(LiveStreamingReceiver.TOGGLE_LIVE_STREAMING);
@@ -442,6 +447,7 @@ public class AndroidWebServer extends Activity {
                 res.addHeader("X-XSS-Protection", "1; mode=block");
                 res.addHeader("Content-Security-Policy", "default-src 'self'; frame-ancestors 'self'");
                 res.addHeader("X-Frame-Options", "SAMEORIGIN");
+                res.addHeader("X-Content-Type-Options", "nosniff");
                 return res;
             } else if (uri.endsWith(".properties")) {
                 return newChunkedResponse(Status.OK, "text/html", fis);
@@ -517,8 +523,9 @@ public class AndroidWebServer extends Activity {
 
                 Response res = newChunkedResponse(Status.OK, "text/html", destInputStream);
                 res.addHeader("X-XSS-Protection", "1; mode=block");
-                res.addHeader("Content-Security-Policy", "default-src 'self'; frame-ancestors 'self'");
+                res.addHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; frame-ancestors 'self'");
                 res.addHeader("X-Frame-Options", "SAMEORIGIN");
+                res.addHeader("X-Content-Type-Options", "nosniff");
                 return res;
             } else if (uri.endsWith(".json")) {
 
