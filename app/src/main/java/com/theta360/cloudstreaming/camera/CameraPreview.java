@@ -57,8 +57,8 @@ public class CameraPreview {
             }
             mCamera.setErrorCallback(mErrorCallback);
             mParameters = mCamera.getParameters();
-            mParameters.setPreviewSize(1920, 960);
-            mParameters.set("RIC_SHOOTING_MODE", "RicStillPreview1920");
+            mParameters.setPreviewSize(3840, 1920);
+            mParameters.set("RIC_SHOOTING_MODE", "RicStillPreview3840");
             mParameters.set("RIC_PROC_STITCHING", "RicStaticStitching");
             mParameters.set("recording-hint", "false");
             mCamera.setParameters(mParameters);
