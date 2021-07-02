@@ -71,7 +71,8 @@ public class VideoEncoder implements GetCameraData {
   public boolean prepareVideoEncoder(int width, int height, int fps, int bitRate, int rotation,
       boolean hardwareRotation, FormatVideoEncoder formatVideoEncoder) {
     this.width = width;
-    this.height = (int)(width*9/16);
+    height = (int)(width*9/16);
+    this.height = height;
     this.fps = fps;
     this.bitRate = bitRate;
     this.rotation = rotation;
