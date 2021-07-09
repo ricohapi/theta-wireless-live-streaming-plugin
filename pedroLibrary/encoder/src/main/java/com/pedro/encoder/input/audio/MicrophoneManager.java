@@ -13,7 +13,7 @@ import com.pedro.encoder.audio.DataTaken;
 public class MicrophoneManager {
 
     private final String TAG = "MicrophoneManager";
-    public static final int BUFFER_SIZE = 4096;
+    public static final int BUFFER_SIZE = 8192;
     private AudioRecord audioRecord;
     private GetMicrophoneData getMicrophoneData;
     private byte[] pcmBuffer = new byte[BUFFER_SIZE];
@@ -22,7 +22,7 @@ public class MicrophoneManager {
     private boolean created = false;
 
     //default parameters for microphone
-    private int sampleRate = 44100; //hz
+    private int sampleRate = 48000; //hz
     private int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
     private int channel = AudioFormat.CHANNEL_IN_STEREO;
     private boolean muted = false;
@@ -36,8 +36,8 @@ public class MicrophoneManager {
      * Create audio record
      */
     public void createMicrophone() {
-        createMicrophone(sampleRate, true, false, false);
-        Log.i(TAG, "Microphone created, " + sampleRate + "hz, Stereo");
+        createMicrophone(sampleRate, false, false, false);
+        Log.i(TAG, "Microphone created, " + sampleRate + "hz, Mono");
     }
 
     /**
