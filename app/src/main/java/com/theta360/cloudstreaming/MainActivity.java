@@ -176,6 +176,8 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         ((EditText) findViewById(R.id.txtheight)).setEnabled(false);
         ((EditText) findViewById(R.id.txtframe)).setEnabled(false);
         ((EditText) findViewById(R.id.txtbitrate)).setEnabled(false);
+        ((EditText) findViewById(R.id.textNoOperationTimeoutMinute)).setEnabled(false);
+        ((EditText) findViewById(R.id.textAudioSamplingRate)).setEnabled(false);
         ((Switch) findViewById(R.id.swUsePreview)).setChecked(true);
 
         am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
@@ -870,7 +872,8 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                                             ((TextView) findViewById(R.id.txtheight)).setText(String.valueOf(settingData.getMovieHeight()));  // 解像度 縦
                                             ((TextView) findViewById(R.id.txtframe)).setText(String.valueOf((int) settingData.getFps()));     // フレームレート
                                             ((TextView) findViewById(R.id.txtbitrate)).setText(String.valueOf(settingData.getBitRate()));   // ビットレート
-                                            ((TextView) findViewById(R.id.textNoOperationTimeoutMinute)).setText(String.valueOf(settingData.getNoOperationTimeoutMinute()));   // 無操作タイムアウト秒
+                                            ((TextView) findViewById(R.id.textNoOperationTimeoutMinute)).setText(String.valueOf(settingData.getNoOperationTimeoutMinute()));
+                                            ((TextView) findViewById(R.id.textAudioSamplingRate)).setText(String.valueOf(settingData.getAudioSamplingRate()));
                                         }
                                     });
 
