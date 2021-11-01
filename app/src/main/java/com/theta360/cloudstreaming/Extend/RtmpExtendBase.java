@@ -255,7 +255,7 @@ public abstract class RtmpExtendBase implements GetMicrophoneData, AudioDecoderI
      * @return Success: true, failed: false
      */
     public boolean prepareAudio() {
-        microphoneManager.createMicrophone(48000, false, false, false);
+        microphoneManager.createMicrophone(44100, false, false, true);
         // If the argument is omitted, 128 * 1024, 44100, true, false, false
         return this.audioEncoder.prepareAudioEncoder(128 * 1024, 44100, false);
     }
