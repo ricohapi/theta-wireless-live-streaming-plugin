@@ -40,6 +40,7 @@ import android.widget.Toast;
 import com.github.faucamp.simplertmp.origin.SequenceNumberStorage;
 import com.github.faucamp.simplertmp.origin.CheckIsStreamVideo;
 import com.pedro.rtplibrary.view.OpenGlView;
+import com.pedro.rtplibrary.rtmp.RtmpCamera1;
 import com.theta360.cloudstreaming.Extend.RtmpExtend;
 import com.theta360.cloudstreaming.Util.LogUtilDebugTree;
 import com.theta360.cloudstreaming.camera.CameraPreview;
@@ -61,7 +62,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import net.ossrs.rtmp.ConnectCheckerRtmp;
+import com.pedro.rtmp.utils.ConnectCheckerRtmp;
 import timber.log.Timber;
 
 import static com.theta360.cloudstreaming.httpserver.AndroidWebServer.PRIMARY_KEY_ID;
@@ -74,7 +75,7 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
     private final long CONNECTION_FAILED_INTERVAL_MSEC = 2000;
     private final int LOG_DELETE_ELAPSED_DAYS = 30;
 
-    private RtmpExtend rtmpExtend;
+    private RtmpCamera1  mRtmpCamera1;
 
     private AudioManager am;
     private EditText etUrl;
@@ -179,7 +180,6 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         dbObject = hlpr.getWritableDatabase();
         updateStatus(StatusType.RUNNING);
 
-        rtmpExtend = new RtmpExtend(openGlView, this);
         cameraPreview = new CameraPreview();
 
         // Forbid editing EditText
@@ -193,6 +193,9 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 //        boolean micMute = am.isMicrophoneMute();
 //        Timber.d("micMute = " + micMute);
+
+        notificationCameraClose();
+        mRtmpCamera1 = new RtmpCamera1(openGlView, this);
 
         // set callback for pressing buttons
         setKeyCallback(new KeyCallback() {
@@ -349,8 +352,8 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         super.onPause();
         unregisterReceiver(mLiveStreamingReceiver);
         unregisterReceiver(mMeasureBitrateReceiver);
-        if (rtmpExtend != null && rtmpExtend.isStreaming()) {
-            rtmpExtend.stopStream();
+        if (mRtmpCamera1 != null && mRtmpCamera1.isStreaming()) {
+            mRtmpCamera1.stopStream();
             cameraPreview.stop();
             shutDownTimer.reset(false, noOperationTimeoutMSec);
         }
@@ -397,8 +400,7 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
             return;
         }
 
-        // MEMO: The state that the distribution is stopped or is not being streamed, is used as the status before distribution.
-        if (!rtmpExtend.isStreaming()) {
+        if (!mRtmpCamera1.isStreaming()) {
             startStreaming();
             startDelayJudgment();
         } else {
@@ -458,21 +460,21 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
 
             Timber.i("streaming settings: " + streamingParamMap.toString());
 
-            rtmpExtend.setStreamingParamMap(streamingParamMap);
 
             // Check video and audio preparation
-            if (rtmpExtend.prepareAudio() && rtmpExtend.prepareVideo()) {
+            if (mRtmpCamera1.prepareAudio(128 * 1024,audioSamplingRate, false, false, false)
+                    && mRtmpCamera1.prepareVideo(movieW, movieH, (int)settingData.getFps(), (int)(bitReate * 1000000),2,0) ) {
 
                 // Start streaming
                 CheckIsStreamVideo.init();
-                rtmpExtend.startStream(settingData.getServerUrl() + "/" + settingData.getStreamName());
+                mRtmpCamera1.startStream(settingData.getServerUrl() + "/" + settingData.getStreamName());
 
                 if (((Switch) findViewById(R.id.swUsePreview)).isChecked()) {
                     cameraPreview.start(openGlView.getSurfaceTexture());
                 } else {
                     Timber.d("Can not be started except in the preview mode.");
                 }
-                if (rtmpExtend.isStreaming()) {
+                if (mRtmpCamera1.isStreaming()) {
                     changeStreamingLED();
                     updateStatus(StatusType.LIVE_STREAMING);
                 } else {
@@ -492,7 +494,7 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         if (delayJudgmentService != null) {
             delayJudgmentService.shutdownNow();
         }
-        rtmpExtend.stopStream();
+        mRtmpCamera1.stopStream();
         cameraPreview.stop();
     }
 
@@ -682,7 +684,7 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
             int CHECK_TIME_SEC = 10;
             double THRESHOLD = 0.8;
 
-            if (rtmpExtend.isStreaming()) {
+            if (mRtmpCamera1.isStreaming()) {
                 isMeasureBitrate = false;
                 return;
             }
@@ -707,7 +709,7 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
             SequenceNumberStorage.initSequenceNumber();
 
             long startTimeMills = System.currentTimeMillis();
-            while(rtmpExtend.isStreaming()) {
+            while(mRtmpCamera1.isStreaming()) {
                 if (System.currentTimeMillis() - startTimeMills < CHECK_TIME_SEC * 1000) {
                     continue;
                 }
@@ -961,7 +963,7 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
             try {
                 while (true) {
                     Thread.sleep(CHECK_TIME_SEC * 1000);
-                    if (rtmpExtend.isStreaming()) {
+                    if (mRtmpCamera1.isStreaming()) {
                         double elapsedTime = (System.currentTimeMillis() - startTime) / 1000;
                         long sentByteSize = SequenceNumberStorage.calculateByte();
                         double delaySecond = elapsedTime - sentByteSize / byterate;
@@ -1021,5 +1023,11 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         }
         playPPPSoundWithErrorLED();
     }
+
+    @Override
+    public void onNewBitrateRtmp(long bitrate){return;}
+
+    @Override
+    public void onConnectionStartedRtmp(String str){return;}
 
 }

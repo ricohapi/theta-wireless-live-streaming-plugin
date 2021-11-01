@@ -45,10 +45,8 @@ dependencies {
     implementation "com.jakewharton.timber:timber:${project.TIMBER_VERSION}"
     implementation "com.google.code.gson:gson:${project.GSON_VERSION}"
     implementation 'com.nanohttpd:nanohttpd-webserver:2.2.0'
+    implementation 'com.github.pedroSG94.rtmp-rtsp-stream-client-java:rtplibrary:2.0.7'
 
-    implementation project(':encoder')
-    implementation project(':rtmp')
-    implementation project(':rtplibrary')
     implementation project(':pluginlibrary')
 
 }
