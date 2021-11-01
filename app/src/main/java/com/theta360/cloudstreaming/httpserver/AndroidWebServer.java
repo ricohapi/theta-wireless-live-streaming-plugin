@@ -33,7 +33,6 @@ import android.util.Base64;
 import android.util.Log;
 
 import com.theta360.cloudstreaming.receiver.LiveStreamingReceiver;
-import com.theta360.cloudstreaming.receiver.MeasureBitrateReceiver;
 import com.theta360.cloudstreaming.settingdata.Bitrate;
 import com.theta360.cloudstreaming.settingdata.SettingData;
 import fi.iki.elonen.NanoHTTPD;
@@ -74,6 +73,7 @@ public class AndroidWebServer extends Activity {
     private Boolean requested;
 
     public static final int TIMEOUT_DEFAULT_MINUTE = -1;
+    public static final int DEFAULT_AUDIO_SAMPLING_RATE = 48000;
     private Context con;
 
     private String measuredBitrate;
@@ -321,7 +321,7 @@ public class AndroidWebServer extends Activity {
                     values.put("stream_name", decodeStreamName(crypt_text));
                     values.put("crypt_text", crypt_text);
 
-                    values.put("auto_bitrate", parms.get("auto_bitrate"));
+                    values.put("audio_sampling_rate", parms.get("audio_sampling_rate"));
                     values.put("no_operation_timeout_minute", parms.get("no_operation_timeout_minute"));
 
                     long num = dbObject.update("theta360_setting", values, "id=?", new String[]{String.valueOf(PRIMARY_KEY_ID)});
@@ -373,52 +373,6 @@ public class AndroidWebServer extends Activity {
                 Intent intent = new Intent(LiveStreamingReceiver.TOGGLE_LIVE_STREAMING);
                 context.sendBroadcast(intent);
                 return newChunkedResponse(Status.OK, "text/html", null);
-            } else if (uri.equals("/measure_bitrate")) {
-                // Measure bit rate
-                measuredBitrate = null;
-                String serverUrl = parms.get("server-url");
-                String streamName = decodeStreamName(parms.get("stream-name"));
-                String movieType = parms.get("movie-size");
-                int movie_width = 0;
-                int movie_height = 0;
-                if (MovieTypes.Movie4k.getString().equals(movieType)) {
-                    movie_width = Bitrate.MOVIE_WIDTH_4K;
-                    movie_height = Bitrate.MOVIE_HEIGHT_4K;
-                } else if (MovieTypes.Movie2k.getString().equals(movieType)) {
-                    movie_width = Bitrate.MOVIE_WIDTH_2K;
-                    movie_height = Bitrate.MOVIE_HEIGHT_2K;
-                } else if (MovieTypes.Movie1k.getString().equals(movieType)) {
-                    movie_width = Bitrate.MOVIE_WIDTH_1K;
-                    movie_height = Bitrate.MOVIE_HEIGHT_1K;
-                } else {
-                    movie_width = Bitrate.MOVIE_WIDTH_06K;
-                    movie_height = Bitrate.MOVIE_HEIGHT_06K;
-                }
-                Intent intent = new Intent(MeasureBitrateReceiver.MEASURE_BITRATE);
-                intent.putExtra(MeasureBitrateReceiver.KEY_SERVER_URL, serverUrl);
-                intent.putExtra(MeasureBitrateReceiver.KEY_STREAM_NAME, streamName);
-                intent.putExtra(MeasureBitrateReceiver.KEY_WIDTH, movie_width);
-                intent.putExtra(MeasureBitrateReceiver.KEY_HEIGHT, movie_height);
-                context.sendBroadcast(intent);
-                String bitrate = null;
-                // Wait for measurement
-                long start = System.currentTimeMillis();
-                while (System.currentTimeMillis() - start < 15 * 1000) {
-                    if (measuredBitrate != null) {
-                        bitrate = measuredBitrate;
-                        break;
-                    }
-                }
-                if (bitrate == null) {
-                    bitrate = "";
-                }
-                InputStream destInputStream = null;
-                try {
-                    destInputStream = stringToInputStream(bitrate);
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-                return newChunkedResponse(Status.OK, "text/html", destInputStream);
             }
 
             String filename = uri;
@@ -505,7 +459,7 @@ public class AndroidWebServer extends Activity {
                     JSCode += "\\$('#bitrate06k').val('" + settingData.getBitRate() + "');";
                 }
 
-                JSCode += "\\$('#auto_bitrate').val('" + settingData.getAutoBitRate() + "');";
+                JSCode += "\\$('#audio_sampling_rate_text').val('" + settingData.getAudioSamplingRate() + "');";
 
                 JSCode += "\\$('#no_operation_timeout_minute_text').val('" + settingData.getNoOperationTimeoutMinute() + "');";
 
@@ -596,8 +550,8 @@ public class AndroidWebServer extends Activity {
                     settingData.setMovieWidth(cursor.getInt(cursor.getColumnIndex("movie_width")));
                     settingData.setMovieHeight(cursor.getInt(cursor.getColumnIndex("movie_height")));
                     settingData.setFps(cursor.getDouble(cursor.getColumnIndex("fps")));
-                    settingData.setBitRate(prevent_xss(cursor.getString(cursor.getColumnIndex("bitrate"))));
-                    settingData.setAutoBitRate(prevent_xss(cursor.getString(cursor.getColumnIndex("auto_bitrate"))));
+                    settingData.setBitRate(cursor.getString(cursor.getColumnIndex("bitrate")));
+                    settingData.setAudioSamplingRate(cursor.getInt(cursor.getColumnIndex("audio_sampling_rate")));
                     settingData.setNoOperationTimeoutMinute(cursor.getInt(cursor.getColumnIndex("no_operation_timeout_minute")));
                     settingData.setStatus(cursor.getString(cursor.getColumnIndex("status")));
                 }
