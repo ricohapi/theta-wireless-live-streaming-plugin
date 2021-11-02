@@ -9,12 +9,12 @@ Wireless Live Streaming plug-in can stream live 360 movie to YouTube directly fr
 
 By using the Wireless Live Streaming plug-in, you are agreeing to the above and the license terms, [LICENSE.txt](LICENSE.txt).
 
-Copyright &copy; 2019 Ricoh Company, Ltd.
+Copyright &copy; 2021 Ricoh Company, Ltd.
 
 # 3. Development Environment
 
 * RICOH THETA V and RICOH THETA Z1
-* Firmware version 2.50.1 (V), 1.03.5 (Z1)
+* Firmware version 3.70.1 (V), 2.00.1 (Z1)
 
 > How to update your RICOH THETA firmware:
 > * [THETA V](https://support.theta360.com/en/manual/v/content/update/update_01.html)
@@ -66,7 +66,8 @@ For example, let's assume that there are a THETA, a macOS machine and an iPhone 
     1. Put "Primary Server URL" of YouTube to the "Server URL" box in Web UI.
     1. Put "Stream Name" of YouTube to the "Stream name/key" box in Web UI.
     1. Select Resolution (e.g. 4K(3840x1920) 30fps).
-    1. Select Bit rates from the list. If you select "Auto", the camera will need to stream once to check the bandwidth of the network.
+    1. Select Bit rates from the list.
+    1. Select Audio sample rate (e.g. 48.0KHz).
     1. Press "Fix streaming settings" button.
 11. Prepare streaming on [YouTube](http://www.youtube.com/my_live_events).
     Please use the same stream name specified at step.7.
@@ -82,7 +83,9 @@ For example, let's assume that there are a THETA, a macOS machine and an iPhone 
 # 6. History
 * ver.1.0.9 (2018/07/23): Initial version.
 * ver 1.1.1 (2019/05/08): THETA Z1 is supported.
-
+* ver 1.1.4 (2021/11/02): Removed bitrate measurement function.
+                          RTMPS is supported.
+                          Added 44.8KHz audio sample rate.
 ---
 
 ## Trademark Information
