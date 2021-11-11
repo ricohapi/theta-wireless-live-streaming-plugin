@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black"
+    >
+
+  <EditText
+      android:hint="@string/hint_rtmp"
+      android:textColor="@color/appColor"
+      android:textColorHint="@color/appColor"
+      android:inputType="textUri"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:gravity="center"
+      android:layout_margin="20dp"
+      android:id="@+id/et_rtp_url"
+      />
+
+  <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="horizontal"
+      android:layout_alignParentBottom="true"
+      android:layout_margin="20dp"
+      android:gravity="center"
+      android:id="@+id/ll_buttons"
+      >
+
+    <Button
+        android:text="@string/start_record"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:id="@+id/b_record"
+        />
+
+    <Button
+        android:text="@string/start_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:id="@+id/b_start_stop"
+        />
+
+  </LinearLayout>
+
+  <Button
+      android:text="@string/select_file"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:id="@+id/b_select_file"
+      android:layout_marginBottom="10dp"
+      android:layout_marginRight="10dp"
+      android:layout_above="@+id/seek_bar"
+      android:layout_alignParentRight="true"
+      />
+
+  <Button
+      android:text="@string/resync_file"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_above="@+id/seek_bar"
+      android:layout_marginBottom="10dp"
+      android:layout_marginLeft="10dp"
+      android:id="@+id/b_re_sync"
+      />
+
+  <SeekBar
+      style="?android:attr/progressBarStyleHorizontal"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_above="@+id/ll_buttons"
+      android:layout_centerHorizontal="true"
+      android:id="@+id/seek_bar"
+      android:layout_marginLeft="20dp"
+      android:layout_marginRight="20dp"
+      />
+
+  <TextView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:id="@+id/tv_file"
+      android:layout_above="@+id/b_select_file"
+      android:layout_centerHorizontal="true"
+      android:textColor="@color/appColor"
+      android:layout_margin="10dp"
+      />
+</RelativeLayout>

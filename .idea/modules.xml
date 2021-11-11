@@ -3,7 +3,11 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/app.iml" group="wirelesslivestreaming_xss/app" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/pedroLibrary/encoder/encoder.iml" filepath="$PROJECT_DIR$/.idea/modules/pedroLibrary/encoder/encoder.iml" group="wirelesslivestreaming_xss/encoder" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/pluginsdk/pluginlibrary/pluginlibrary.iml" filepath="$PROJECT_DIR$/.idea/modules/pluginsdk/pluginlibrary/pluginlibrary.iml" group="wirelesslivestreaming_xss/pluginlibrary" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/pedroLibrary/rtmp/rtmp.iml" filepath="$PROJECT_DIR$/.idea/modules/pedroLibrary/rtmp/rtmp.iml" group="wirelesslivestreaming_xss/rtmp" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/pedroLibrary/rtplibrary/rtplibrary.iml" filepath="$PROJECT_DIR$/.idea/modules/pedroLibrary/rtplibrary/rtplibrary.iml" group="wirelesslivestreaming_xss/rtplibrary" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/pedroLibrary/rtsp/rtsp.iml" filepath="$PROJECT_DIR$/.idea/modules/pedroLibrary/rtsp/rtsp.iml" group="wirelesslivestreaming_xss/rtsp" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/wirelesslivestreaming_xss.iml" filepath="$PROJECT_DIR$/.idea/modules/wirelesslivestreaming_xss.iml" group="wirelesslivestreaming_xss" />
     </modules>
   </component>

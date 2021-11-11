@@ -11,6 +11,10 @@ buildscript {
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
+        implementation 'androidx.appcompat:appcompat:1.0.0'
+        implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+        androidTestImplementation 'androidx.test:runner:1.2.0'
+        androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     }
 }
 

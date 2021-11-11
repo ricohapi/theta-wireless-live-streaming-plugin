@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion Integer.parseInt(project.ANDROID_BUILD_SDK_VERSION)
+    compileSdkVersion 30
     buildToolsVersion project.ANDROID_BUILD_TOOLS_VERSION
 
     defaultConfig {
@@ -36,6 +36,13 @@ android {
 }
 
 dependencies {
+    implementation 'androidx.appcompat:appcompat:1.0.0'
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+    androidTestImplementation 'androidx.test:runner:1.2.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    implementation "androidx.annotation:annotation:1.2.0"
+    // To use the Java-compatible @Experimental API annotation
+    implementation "androidx.annotation:annotation-experimental:1.1.0"
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "com.android.support:appcompat-v7:${project.ANDROID_SUPPORT_VERSION}"
     implementation "com.android.support:design:${project.ANDROID_SUPPORT_VERSION}"
@@ -45,8 +52,9 @@ dependencies {
     implementation "com.jakewharton.timber:timber:${project.TIMBER_VERSION}"
     implementation "com.google.code.gson:gson:${project.GSON_VERSION}"
     implementation 'com.nanohttpd:nanohttpd-webserver:2.2.0'
-    implementation 'com.github.pedroSG94.rtmp-rtsp-stream-client-java:rtplibrary:2.0.7'
-
+    implementation project(':encoder')
+    implementation project(':rtmp')
+    implementation project(':rtplibrary')
     implementation project(':pluginlibrary')
 
 }

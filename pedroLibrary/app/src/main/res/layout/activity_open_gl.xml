@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/activity_example_rtmp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    >
+  <com.pedro.rtplibrary.view.OpenGlView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:id="@+id/surfaceView"
+      app:keepAspectRatio="true"
+      app:aspectRatioMode="adjust"
+      app:AAEnabled="false"
+      app:numFilters="1"
+      app:isFlipHorizontal="false"
+      app:isFlipVertical="false"
+      />
+
+  <EditText
+      android:textColor="@color/appColor"
+      android:textColorHint="@color/appColor"
+      android:inputType="textUri"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:gravity="center"
+      android:layout_margin="20dp"
+      android:id="@+id/et_rtp_url"
+      />
+
+  <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="horizontal"
+      android:layout_alignParentBottom="true"
+      android:layout_margin="20dp"
+      android:gravity="center"
+      >
+
+    <Button
+        android:text="@string/start_record"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:id="@+id/b_record"
+        />
+
+    <Button
+        android:text="@string/start_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:id="@+id/b_start_stop"
+        />
+
+    <Button
+        android:text="@string/switch_camera_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/switch_camera"
+        />
+  </LinearLayout>
+</RelativeLayout>

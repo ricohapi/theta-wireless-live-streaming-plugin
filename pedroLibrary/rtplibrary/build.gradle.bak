@@ -1,0 +1,26 @@
+apply plugin: 'com.android.library'
+apply plugin: 'maven-publish'
+
+android {
+  compileSdkVersion 30
+
+  defaultConfig {
+    minSdkVersion 16
+    targetSdkVersion 30
+    versionCode 207
+    versionName "2.0.7"
+  }
+  buildTypes {
+    release {
+      minifyEnabled false
+      consumerProguardFiles 'proguard-rules.pro'
+    }
+  }
+
+}
+
+dependencies {
+  api project(':encoder')
+  api project(':rtmp')
+  api project(':rtsp')
+}

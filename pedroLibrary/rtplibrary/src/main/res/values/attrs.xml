@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <attr name="keepAspectRatio"
+      format="boolean"/>
+  <attr name="isFlipHorizontal"
+      format="boolean"/>
+  <attr name="isFlipVertical"
+      format="boolean"/>
+<!--  FILL, ADJUST-->
+  <attr name="aspectRatioMode" format="enum">
+    <enum name="adjust" value="0"/>
+    <enum name="fill" value="1"/>
+    <enum name="adjust_rotate" value="2"/>
+    <enum name="fill_rotate" value="3"/>
+  </attr>
+
+  <declare-styleable name="OpenGlView">
+    <attr name="AAEnabled"
+        format="boolean"/>
+    <attr name="numFilters"
+        format="integer"/>
+    <attr name="keepAspectRatio"/>
+    <attr name="aspectRatioMode"/>
+    <attr name="isFlipHorizontal"/>
+    <attr name="isFlipVertical"/>
+  </declare-styleable>
+
+  <declare-styleable name="LightOpenGlView">
+    <attr name="keepAspectRatio"/>
+    <attr name="aspectRatioMode"/>
+    <attr name="isFlipHorizontal"/>
+    <attr name="isFlipVertical"/>
+  </declare-styleable>
+</resources>
