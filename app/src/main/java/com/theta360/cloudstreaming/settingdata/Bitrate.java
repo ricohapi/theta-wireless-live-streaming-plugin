@@ -24,7 +24,7 @@ import java.util.Map;
  */
 public class Bitrate {
     public static final int MOVIE_WIDTH_4K = 3840;
-    public static final int MOVIE_HEIGHT_4K = 1920;
+    public static final int MOVIE_HEIGHT_4K = 2160;
     public static final double FPS_4K = 30.0;
     public static final String BITRATE_4K_DEFAULT = "20";
     private static final String BITRATE_4K_12 = "12";
@@ -42,7 +42,7 @@ public class Bitrate {
     };
 
     public static final int MOVIE_WIDTH_2K = 1920;
-    public static final int MOVIE_HEIGHT_2K = 960;
+    public static final int MOVIE_HEIGHT_2K = 1080;
     public static final double FPS_2K = 30.0;
     public static final String BITRATE_2K_DEFAULT = "6";
     private static final String BITRATE_2K_3 = "3";
@@ -60,7 +60,7 @@ public class Bitrate {
     };
 
     public static final int MOVIE_WIDTH_1K = 1024;
-    public static final int MOVIE_HEIGHT_1K = 512;
+    public static final int MOVIE_HEIGHT_1K = 576;
     public static final double FPS_1K = 30.0;
     public static final String BITRATE_1K_DEFAULT = "0.85";
     private static final String BITRATE_1K_05 = "0.5";
@@ -78,7 +78,7 @@ public class Bitrate {
     };
 
     public static final int MOVIE_WIDTH_06K = 640;
-    public static final int MOVIE_HEIGHT_06K = 320;
+    public static final int MOVIE_HEIGHT_06K = 360;
     public static final double FPS_06K = 30.0;
     public static final String BITRATE_06K_DEFAULT = "0.36";
     private static final String BITRATE_06K_025 = "0.25";

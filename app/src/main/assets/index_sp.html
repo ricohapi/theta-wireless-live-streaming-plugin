@@ -622,10 +622,10 @@
       <span type="hidden" id="encryption_iv"></span>
 
       <select id="movie" name="movie" hidden>
-        <option value="MOVIE4K">4K(3840x1920) 30fps</option>
-        <option value="MOVIE2K">2K(1920x960) 30fps</option>
-        <option value="MOVIE1K">1K(1024x512) 30fps</option>
-        <option value="MOVIE06K">0.6K(640x320) 30fps</option>
+        <option value="MOVIE4K">4K(3840x2160) 30fps</option>
+        <option value="MOVIE2K">2K(1920x1080) 30fps</option>
+        <option value="MOVIE1K">1K(1024x576) 30fps</option>
+        <option value="MOVIE06K">0.6K(640x360) 30fps</option>
       </select>
       <select id="bitrate4k" name="bitrate4k">
         <option value="40">40Mbps</option>
@@ -669,7 +669,7 @@
           <table id="slide_movie_size_table" class="settings_table">
             <tr class="bottom_border" onclick="selectMovieSize('MOVIE4K')">
               <td id="slide_movie_size_table_head_1">
-                <label id="movie_size_4k" class="settings_item_label">4K(3840x1920) 30fps</label>
+                <label id="movie_size_4k" class="settings_item_label">4K(3840x2160) 30fps</label>
               </td>
               <td class="slide_check">
                 <img id="check_4k" src="img/101.png" class="check_icon">
@@ -677,7 +677,7 @@
             </tr>
             <tr class="bottom_border" onclick="selectMovieSize('MOVIE2K')">
               <td>
-                <label id="movie_size_2k" class="settings_item_label">2K(1920x960) 30fps</label>
+                <label id="movie_size_2k" class="settings_item_label">2K(1920x1080) 30fps</label>
               </td>
               <td>
                 <img id="check_2k" src="img/101.png" class="check_icon">
@@ -685,7 +685,7 @@
             </tr>
             <tr class="bottom_border" onclick="selectMovieSize('MOVIE1K')">
               <td>
-                <label id="movie_size_1k" class="settings_item_label">1K(1024x512) 30fps</label>
+                <label id="movie_size_1k" class="settings_item_label">1K(1024x576) 30fps</label>
               </td>
               <td>
                 <img id="check_1k" src="img/101.png" class="check_icon">
@@ -693,7 +693,7 @@
             </tr>
             <tr onclick="selectMovieSize('MOVIE06K')">
               <td>
-                <label id="movie_size_06k" class="settings_item_label">0.6K(640x320) 30fps</label>
+                <label id="movie_size_06k" class="settings_item_label">0.6K(640x360) 30fps</label>
               </td>
               <td>
                 <img id="check_06k" src="img/101.png" class="check_icon">

@@ -65,7 +65,7 @@ For example, let's assume that there is a THETA, a macOS machine, and an iPhone 
 10. Enter streaming setting.
     1. Put "Primary Server URL" of YouTube to the "Server URL" box in Web UI.
     1. Put "Stream Name" of YouTube to the "Stream name/key" box in Web UI.
-    1. Select Resolution (e.g. 4K(3840x1920) 30fps).
+    1. Select Resolution (e.g. 4K(3840x2160) 30fps).
     1. Select Bit rates from the list.
     1. Select Audio sample rate (e.g., 48.0KHz).
     1. Press the "Fix streaming settings" button.
