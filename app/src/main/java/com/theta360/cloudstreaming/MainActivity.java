@@ -601,7 +601,6 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
 
     private class ScheduleStreaming implements Runnable {
         private boolean isScheduleStreaming = false;
-        private boolean isMeasureBitrate = false;
         private String measureServerUrl;
         private String measureStreamName;
         private int measureWidth = 0;
@@ -611,15 +610,6 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         // Schedule streaming
         public void setSchedule() {
             isScheduleStreaming = true;
-        }
-
-        // Schedule bit rate measurement
-        public void setMeasureBitrate(String serverUrl, String streamName, int width, int height) {
-            measureServerUrl = serverUrl;
-            measureStreamName = streamName;
-            measureWidth = width;
-            measureHeight = height;
-            isMeasureBitrate = true;
         }
 
         /**
@@ -632,10 +622,6 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         @Override
         public void run() {
             while(!isExit) {
-                // Changing bit rate AUTO
-                if (isMeasureBitrate) {
-                    measureBitrate();
-                }
 
                 // Ignore streaming instructions during streaming preparation.
                 if (!isScheduleStreaming) {
@@ -650,80 +636,6 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                     isScheduleStreaming = false;
                 }
             }
-        }
-
-        private void measureBitrate() {
-            int CHECK_TIME_SEC = 10;
-            double THRESHOLD = 0.8;
-
-            if (mRtmpCamera1.isStreaming()) {
-                isMeasureBitrate = false;
-                return;
-            }
-
-            double calculated_bitrate = 0;
-            // Temporary evacuation of set information
-            String tmpBitrate = settingData.getBitRate();
-            String tmpServerUrl = settingData.getServerUrl();
-            String tmpStreamName = settingData.getStreamName();
-            int tmpWidth = settingData.getMovieWidth();
-            int tmpHeight = settingData.getMovieHeight();
-            Boolean tmpSettingFix = settingFix;
-            settingData.setServerUrl(measureServerUrl);
-            settingData.setStreamName(measureStreamName);
-            Double maxBitrate = Double.parseDouble(Bitrate.getMaxBitrate(measureWidth));
-            // Deliver at the set upper bit rate
-            settingData.setBitRate(String.valueOf(maxBitrate));
-            settingData.setMovieWidth(measureWidth);
-            settingData.setMovieHeight(measureHeight);
-            settingFix = !(measureServerUrl.equals("") || measureStreamName.equals(""));
-            startStreaming();
-            SequenceNumberStorage.initSequenceNumber();
-
-            long startTimeMills = System.currentTimeMillis();
-            while(mRtmpCamera1.isStreaming()) {
-                if (System.currentTimeMillis() - startTimeMills < CHECK_TIME_SEC * 1000) {
-                    continue;
-                }
-                long averageByteSize = SequenceNumberStorage.calculateByte() / CHECK_TIME_SEC;
-                Timber.i("AverageByteSize is " + String.valueOf(averageByteSize));
-
-                calculated_bitrate = averageByteSize * BYTE_TO_BIT * BIT_TO_MBIT * THRESHOLD;
-                Timber.i("Calculated Bitrate is " + String.valueOf(calculated_bitrate));
-
-                stopStreaming();
-                changeReadyLED();
-                updateStatus(StatusType.STOP_STREAMING);
-                break;
-            }
-            settingData.setServerUrl(tmpServerUrl);
-            settingData.setStreamName(tmpStreamName);
-            settingData.setBitRate(tmpBitrate);
-            settingData.setMovieWidth(tmpWidth);
-            settingData.setMovieHeight(tmpHeight);
-            settingFix = tmpSettingFix;
-
-            // Decide bit rate
-            String bitrate;
-            if (calculated_bitrate < maxBitrate) {
-                bitrate = String.format("%.2f", calculated_bitrate);
-            } else {
-                bitrate = String.format("%.2f", maxBitrate);
-            }
-            // Erase extra 0 of bit rate
-            String bitrateLast = bitrate.substring(bitrate.length() - 1);
-            while(bitrateLast.equals("0")) {
-                bitrate = bitrate.substring(0, bitrate.length() - 1);
-                bitrateLast = bitrate.substring(bitrate.length() - 1);
-            }
-            if (bitrateLast.equals(".")) {
-                bitrate = bitrate.substring(0, bitrate.length() - 1);
-            }
-            // Pass the calculated bit rate to the screen
-            webUI.setMeasuredBitrate(bitrate);
-
-            isMeasureBitrate = false;
-            isScheduleStreaming = false;
         }
     }
 
