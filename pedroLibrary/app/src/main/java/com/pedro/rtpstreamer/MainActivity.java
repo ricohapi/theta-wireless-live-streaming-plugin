@@ -6,18 +6,20 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
-import android.support.v7.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.appcompat.app.AppCompatActivity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.GridView;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import com.pedro.rtpstreamer.backgroundexample.BackgroundActivity;
 import com.pedro.rtpstreamer.customexample.RtmpActivity;
 import com.pedro.rtpstreamer.customexample.RtspActivity;
 import com.pedro.rtpstreamer.defaultexample.ExampleRtmpActivity;
 import com.pedro.rtpstreamer.defaultexample.ExampleRtspActivity;
-import com.pedro.rtpstreamer.displayexample.DisplayRtmpActivity;
-import com.pedro.rtpstreamer.displayexample.DisplayRtspActivity;
+import com.pedro.rtpstreamer.displayexample.DisplayActivity;
 import com.pedro.rtpstreamer.filestreamexample.RtmpFromFileActivity;
 import com.pedro.rtpstreamer.filestreamexample.RtspFromFileActivity;
 import com.pedro.rtpstreamer.openglexample.OpenGlRtmpActivity;
@@ -28,6 +30,7 @@ import com.pedro.rtpstreamer.texturemodeexample.TextureModeRtmpActivity;
 import com.pedro.rtpstreamer.texturemodeexample.TextureModeRtspActivity;
 import com.pedro.rtpstreamer.utils.ActivityLink;
 import com.pedro.rtpstreamer.utils.ImageAdapter;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,6 +53,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
     overridePendingTransition(R.transition.slide_in, R.transition.slide_out);
+    TextView tvVersion = findViewById(R.id.tv_version);
+    tvVersion.setText(getString(R.string.version, BuildConfig.VERSION_NAME));
 
     list = findViewById(R.id.list);
     createList();
@@ -84,14 +89,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         getString(R.string.texture_mode_rtmp), LOLLIPOP));
     activities.add(new ActivityLink(new Intent(this, TextureModeRtspActivity.class),
         getString(R.string.texture_mode_rtsp), LOLLIPOP));
-    activities.add(new ActivityLink(new Intent(this, DisplayRtmpActivity.class),
-        getString(R.string.display_rtmp), LOLLIPOP));
-    activities.add(new ActivityLink(new Intent(this, DisplayRtspActivity.class),
-        getString(R.string.display_rtsp), LOLLIPOP));
     activities.add(new ActivityLink(new Intent(this, OpenGlRtmpActivity.class),
         getString(R.string.opengl_rtmp), JELLY_BEAN_MR2));
     activities.add(new ActivityLink(new Intent(this, OpenGlRtspActivity.class),
         getString(R.string.opengl_rtsp), JELLY_BEAN_MR2));
+    activities.add(new ActivityLink(new Intent(this, DisplayActivity.class),
+        getString(R.string.display_rtmp), LOLLIPOP));
+    activities.add(new ActivityLink(new Intent(this, BackgroundActivity.class),
+        getString(R.string.service_rtp), LOLLIPOP));
   }
 
   private void setListAdapter(List<ActivityLink> activities) {

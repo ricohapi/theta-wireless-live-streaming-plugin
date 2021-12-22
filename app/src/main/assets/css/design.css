@@ -31,7 +31,7 @@ body {
 }
 
 .settings_name_label {
-    font-size: 14pt;
+    font-size: 12pt;
     position: absolute;
     bottom: 0px;
 }
@@ -44,8 +44,8 @@ body {
 
 .settings_item_input {
     width: 100%;
-    height: 30px;
-    font-size: 14pt;
+    height: 24px;
+    font-size: 12pt;
 }
 
 .height_5 {
@@ -55,8 +55,13 @@ body {
 
 .select_bitrate {
     padding-right: 0px;
-    width: 224px;
+    width: 340px;
 }
+
+.select_audio_sampling_rate {
+    padding-right: 0px;
+    width: 150px;
+ }
 
 /**
  * id指定
@@ -74,7 +79,7 @@ body {
 }
 
 #head_box {
-    height: 84px;
+    height: 82px;
     margin-bottom: 12px;
     position: relative;
 }
@@ -92,18 +97,18 @@ body {
     display: inline-block;
     vertical-align: top;
     width: 59.8%;
-    height: 482px;
+    height: 494px;
     float: right;
     position: relative;
 }
 
 #youtube_box {
-    height: 178px;
+    height: 150px;
     margin-bottom: 12px;
 }
 
 #settings_box {
-    height: 240px;
+    height: 280px;
     margin-bottom: 12px;
 }
 
@@ -198,15 +203,8 @@ body {
 }
 
 #bitrate_box {
+    width: 340px;
     position: relative;
-}
-
-#bitrate_auto_img_box {
-    position: absolute;
-    bottom: 10.5pt;
-    right: 0px;
-    margin-right: 25px;
-    transform: translateY(50%);
 }
 
 #bitrate_table {
@@ -216,23 +214,6 @@ body {
 
 #bitrate_table td {
     padding: 0px;
-}
-
-#bitrate_table_measure_td {
-    padding-left: 6px !important;
-}
-
-#auto_bitrate_button {
-    padding-left: 6px;
-    width: 110px;
-    height: 30px;
-    background-color: #ffffff;
-    border: 0.1px solid #aaaaaa;
-    font-size: 14pt;
-}
-
-#auto_bitrate_button:disabled {
-    opacity: 0.3;
 }
 
 #submit_button_box {

@@ -297,6 +297,18 @@ body {
     width: 56px;
 }
 
+#audio_sampling_rate_table_head_1 {
+    width: 60%;
+}
+
+#audio_sampling_rate_table_head_2 {
+    width: 30%;
+}
+
+#audio_sampling_rate_table_head_3 {
+    width: 56px;
+}
+
 #timeout_table_head_1 {
     width: 60%;
 }
@@ -313,6 +325,9 @@ body {
 }
 
 #bitrate_label {
+}
+
+#audio_sampling_rate_label {
 }
 
 #timeout_label {
@@ -369,38 +384,23 @@ body {
 #slide_bitrate_box {
 }
 
-#slide_auto_bitrate_box {
+}
+
+#slide_audio_sampling_rate {
+}
+
+#slide_audio_sampling_rate_box {
+}
+
+#slide_audio_sampling_rate_table {
+}
+
+#slide_audio_sampling_rate_table tr {
     height: 88px;
-    margin-top: 40px;
 }
 
-#measure_bitrate_description {
-    padding: 20px 50px;
-    font-size: 23px;
-    color: #6e6d72;
-    text-align: center;
-}
-
-#measure_bitrate_button {
-     background-color: #ffffff;
-     width:372px;
-     height:72px;
-     font-size: 34px;
-     color: #000000;
-     display: block;
-     margin-left: auto;
-     margin-right: auto;
-     border-radius: 10px;
-     border: 2px solid #6e6d72;
-}
-
-#measure_bitrate_button:focus {
-    background-color: #d9d9d8;
-    outline: 0px;
-}
-
-#measure_bitrate_button:disabled {
-    opacity: 0.3;
+#slide_audio_sampling_rate_table_head_1 {
+    width: 90%;
 }
 
 #slide_timeout{

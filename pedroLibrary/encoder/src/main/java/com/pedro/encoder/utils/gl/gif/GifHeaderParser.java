@@ -148,11 +148,11 @@ public class GifHeaderParser {
             // Application extension.
             case 0xff:
               readBlock();
-              String app = "";
+              StringBuilder app = new StringBuilder();
               for (int i = 0; i < 11; i++) {
-                app += (char) block[i];
+                app.append((char) block[i]);
               }
-              if (app.equals("NETSCAPE2.0")) {
+              if (app.toString().equals("NETSCAPE2.0")) {
                 readNetscapeExt();
               } else {
                 // Don't care.
@@ -264,23 +264,22 @@ public class GifHeaderParser {
         int b1 = ((int) block[1]) & 0xff;
         int b2 = ((int) block[2]) & 0xff;
         header.loopCount = (b2 << 8) | b1;
-        if(header.loopCount == 0) {
+        if (header.loopCount == 0) {
           header.loopCount = GifDecoder.LOOP_FOREVER;
         }
       }
     } while ((blockSize > 0) && !err());
   }
 
-
   /**
    * Reads GIF file header information.
    */
   private void readHeader() {
-    String id = "";
+    StringBuilder id = new StringBuilder();
     for (int i = 0; i < 6; i++) {
-      id += (char) read();
+      id.append((char) read());
     }
-    if (!id.startsWith("GIF")) {
+    if (!id.toString().startsWith("GIF")) {
       header.status = GifDecoder.STATUS_FORMAT_ERROR;
       return;
     }
