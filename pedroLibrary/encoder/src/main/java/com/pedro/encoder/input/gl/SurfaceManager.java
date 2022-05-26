@@ -6,9 +6,9 @@ import android.opengl.EGLContext;
 import android.opengl.EGLDisplay;
 import android.opengl.EGLExt;
 import android.opengl.EGLSurface;
-import android.opengl.GLES20;
 import android.os.Build;
-import android.support.annotation.RequiresApi;
+import androidx.annotation.RequiresApi;
+import android.util.Log;
 import android.view.Surface;
 import com.pedro.encoder.utils.gl.GlUtil;
 
@@ -19,40 +19,29 @@ import com.pedro.encoder.utils.gl.GlUtil;
 @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
 public class SurfaceManager {
 
+  private static final String TAG = "SurfaceManager";
+
   private static final int EGL_RECORDABLE_ANDROID = 0x3142;
 
-  private EGLContext eglContext = null;
-  private EGLContext eglSharedContext = null;
-  private EGLSurface eglSurface = null;
-  private EGLDisplay eglDisplay = null;
+  private EGLContext eglContext = EGL14.EGL_NO_CONTEXT;
+  private EGLSurface eglSurface = EGL14.EGL_NO_SURFACE;
+  private EGLDisplay eglDisplay = EGL14.EGL_NO_DISPLAY;
+  private volatile boolean isReady = false;
 
-  private Surface surface;
-
-  /**
-   * Creates an EGL context and an EGL surface.
-   */
-  public SurfaceManager(Surface surface, SurfaceManager manager) {
-    this.surface = surface;
-    eglSharedContext = manager.eglContext;
-    eglSetup();
-  }
-
-  /**
-   * Creates an EGL context and an EGL surface.
-   */
-  public SurfaceManager(Surface surface) {
-    this.surface = surface;
-    eglSetup();
+  public boolean isReady() {
+    return isReady;
   }
 
   public void makeCurrent() {
     if (!EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
-      throw new RuntimeException("eglMakeCurrent failed");
+      Log.e(TAG, "eglMakeCurrent failed");
     }
   }
 
   public void swapBuffer() {
-    EGL14.eglSwapBuffers(eglDisplay, eglSurface);
+    if (!EGL14.eglSwapBuffers(eglDisplay, eglSurface)) {
+      Log.e(TAG, "eglSwapBuffers failed");
+    }
   }
 
   /**
@@ -66,7 +55,11 @@ public class SurfaceManager {
   /**
    * Prepares EGL.  We want a GLES 2.0 context and a surface that supports recording.
    */
-  private void eglSetup() {
+  public void eglSetup(int width, int height, Surface surface, EGLContext eglSharedContext) {
+    if (isReady) {
+      Log.e(TAG, "already ready, ignored");
+      return;
+    }
     eglDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
     if (eglDisplay == EGL14.EGL_NO_DISPLAY) {
       throw new RuntimeException("unable to get EGL14 display");
@@ -78,16 +71,43 @@ public class SurfaceManager {
 
     // Configure EGL for recording and OpenGL ES 2.0.
     int[] attribList;
-    if (eglSharedContext == null) {
+    if (eglSharedContext == null && surface == null) {
+      attribList = new int[]{
+              EGL14.EGL_RED_SIZE, 8, EGL14.EGL_GREEN_SIZE, 8, EGL14.EGL_BLUE_SIZE, 8,
+              EGL14.EGL_SURFACE_TYPE, EGL14.EGL_PBUFFER_BIT,
+              EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT,
+              /* AA https://stackoverflow.com/questions/27035893/antialiasing-in-opengl-es-2-0 */
+              //EGL14.EGL_SAMPLE_BUFFERS, 1 /* true */,
+              //EGL14.EGL_SAMPLES, 4, /* increase to more smooth limit of your GPU */
+              EGL14.EGL_NONE
+      };
+    } else if (eglSharedContext == null) {
+      attribList = new int[]{
+              EGL14.EGL_RED_SIZE, 8, EGL14.EGL_GREEN_SIZE, 8, EGL14.EGL_BLUE_SIZE, 8,
+              EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT,
+              /* AA https://stackoverflow.com/questions/27035893/antialiasing-in-opengl-es-2-0 */
+              //EGL14.EGL_SAMPLE_BUFFERS, 1 /* true */,
+              //EGL14.EGL_SAMPLES, 4, /* increase to more smooth limit of your GPU */
+              EGL14.EGL_NONE
+      };
+    } else if (surface == null) {
       attribList = new int[] {
-          EGL14.EGL_RED_SIZE, 8, EGL14.EGL_GREEN_SIZE, 8, EGL14.EGL_BLUE_SIZE, 8,
-          EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT, EGL14.EGL_NONE
+              EGL14.EGL_RED_SIZE, 8, EGL14.EGL_GREEN_SIZE, 8, EGL14.EGL_BLUE_SIZE, 8,
+              EGL14.EGL_SURFACE_TYPE, EGL14.EGL_PBUFFER_BIT,
+              EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT, EGL_RECORDABLE_ANDROID, 1,
+              /* AA https://stackoverflow.com/questions/27035893/antialiasing-in-opengl-es-2-0 */
+              //EGL14.EGL_SAMPLE_BUFFERS, 1 /* true */,
+              //EGL14.EGL_SAMPLES, 4, /* increase to more smooth limit of your GPU */
+              EGL14.EGL_NONE
       };
     } else {
       attribList = new int[] {
-          EGL14.EGL_RED_SIZE, 8, EGL14.EGL_GREEN_SIZE, 8, EGL14.EGL_BLUE_SIZE, 8,
-          EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT, EGL_RECORDABLE_ANDROID, 1,
-          EGL14.EGL_NONE
+              EGL14.EGL_RED_SIZE, 8, EGL14.EGL_GREEN_SIZE, 8, EGL14.EGL_BLUE_SIZE, 8,
+              EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT, EGL_RECORDABLE_ANDROID, 1,
+              /* AA https://stackoverflow.com/questions/27035893/antialiasing-in-opengl-es-2-0 */
+              //EGL14.EGL_SAMPLE_BUFFERS, 1 /* true */,
+              //EGL14.EGL_SAMPLES, 4, /* increase to more smooth limit of your GPU */
+              EGL14.EGL_NONE
       };
     }
     EGLConfig[] configs = new EGLConfig[1];
@@ -100,23 +120,45 @@ public class SurfaceManager {
         EGL14.EGL_CONTEXT_CLIENT_VERSION, 2, EGL14.EGL_NONE
     };
 
-    if (eglSharedContext == null) {
-      eglContext =
-          EGL14.eglCreateContext(eglDisplay, configs[0], EGL14.EGL_NO_CONTEXT, attrib_list, 0);
-    } else {
-      eglContext = EGL14.eglCreateContext(eglDisplay, configs[0], eglSharedContext, attrib_list, 0);
-    }
+    eglContext = EGL14.eglCreateContext(eglDisplay, configs[0],
+        eglSharedContext == null ? EGL14.EGL_NO_CONTEXT : eglSharedContext, attrib_list, 0);
     GlUtil.checkEglError("eglCreateContext");
 
     // Create a window surface, and attach it to the Surface we received.
-    int[] surfaceAttribs = {
-        EGL14.EGL_NONE
-    };
-    eglSurface = EGL14.eglCreateWindowSurface(eglDisplay, configs[0], surface, surfaceAttribs, 0);
+    if (surface == null) {
+      int[] surfaceAttribs = {
+          EGL14.EGL_WIDTH, width, EGL14.EGL_HEIGHT, height, EGL14.EGL_NONE
+      };
+      eglSurface = EGL14.eglCreatePbufferSurface(eglDisplay, configs[0], surfaceAttribs, 0);
+    } else {
+      int[] surfaceAttribs = {
+          EGL14.EGL_NONE
+      };
+      eglSurface = EGL14.eglCreateWindowSurface(eglDisplay, configs[0], surface, surfaceAttribs, 0);
+    }
     GlUtil.checkEglError("eglCreateWindowSurface");
+    isReady = true;
+    Log.i(TAG, "GL initialized");
+  }
 
-    GLES20.glDisable(GLES20.GL_DEPTH_TEST);
-    GLES20.glDisable(GLES20.GL_CULL_FACE);
+  public void eglSetup(Surface surface, SurfaceManager manager) {
+    eglSetup(2, 2, surface, manager.eglContext);
+  }
+
+  public void eglSetup(int width, int height, SurfaceManager manager) {
+    eglSetup(width, height, null, manager.eglContext);
+  }
+
+  public void eglSetup(Surface surface, EGLContext eglContext) {
+    eglSetup(2, 2, surface, eglContext);
+  }
+
+  public void eglSetup(Surface surface) {
+    eglSetup(2, 2, surface, null);
+  }
+
+  public void eglSetup() {
+    eglSetup(2, 2, null, null);
   }
 
   /**
@@ -130,18 +172,18 @@ public class SurfaceManager {
       EGL14.eglDestroyContext(eglDisplay, eglContext);
       EGL14.eglReleaseThread();
       EGL14.eglTerminate(eglDisplay);
+      Log.i(TAG, "GL released");
+      eglDisplay = EGL14.EGL_NO_DISPLAY;
+      eglContext = EGL14.EGL_NO_CONTEXT;
+      eglSurface = EGL14.EGL_NO_SURFACE;
+      isReady = false;
+    } else {
+      Log.e(TAG, "GL already released");
     }
-    eglDisplay = EGL14.EGL_NO_DISPLAY;
-    eglContext = EGL14.EGL_NO_CONTEXT;
-    eglSurface = EGL14.EGL_NO_SURFACE;
   }
 
   public EGLContext getEglContext() {
     return eglContext;
-  }
-
-  public EGLContext getEglSharedContext() {
-    return eglSharedContext;
   }
 
   public EGLSurface getEglSurface() {

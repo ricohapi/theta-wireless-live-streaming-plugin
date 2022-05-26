@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Wireless Live Streaming</string>
+    <string name="keystore_pass">password</string>
+    <string name="oled_middle">Wireless Live Streaming</string>
+    <string name="oled_bottom_ready">STREAMING STANDBY</string>
+    <string name="oled_bottom_streaming">STREAMING</string>
+    <string name="oled_bottom_error_connection">CONNECTION FAILED</string>
+    <string name="oled_bottom_error_setting">ENTER STREAMING INFO</string>
+    <string name="oled_bottom_error_timeout">CONNECTION TIMEOUT</string>
+    <string name="oled_bottom_error_initialize">INITIALIZE FAILED</string>
+    <string name="oled_bottom_error_unexpected">AN UNEXPECTED ERROR: </string>
+    <string name="server_url">サーバーURL</string>
+    <string name="stream_name">ストリーム名/キー</string>
+    <string name="movie_size">動画サイズ</string>
+    <string name="bitrate">ビットレート</string>
+    <string name="time_out">無操作タイムアウト(分)</string>
+    <string name="audio_sampling_rate">音声サンプリングレート</string>
+    <string name="start_live_streaming">配信開始</string>
+    <string name="stop_live_streaming">配信停止</string>
+    <string name="message_running">配信を待機しています</string>
+    <string name="message_live_streaming">配信しています</string>
+    <string name="message_stop_streaming">配信を停止しています</string>
+    <string name="message_error_connect_server">サーバーへの接続が失敗しました</string>
+    <string name="message_error_not_user_setting">配信設定を完了してください</string>
+    <string name="message_time_out">サーバーへの接続がタイムアウトしました</string>
+    <string name="message_error_initialization">カメラの初期化に失敗しました</string>
+    <string name="message_error_unexpected">予期せぬエラーが発生しました</string>
+</resources>

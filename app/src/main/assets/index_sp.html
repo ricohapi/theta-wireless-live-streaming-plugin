@@ -1,6 +1,7 @@
 <html lang="ja">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval';">
     <title>THETA360 setting</title>
     <script type="text/javascript" src="js/jquery.js"></script>
     <script type="text/javascript" src="js/aes.js"></script>
@@ -24,8 +25,6 @@
         if (screen.width > 736) {
             window.location.href = "/index.html";
         }
-
-        var measure_bitrate_flag = 0;
 
         $(function(){
           $('#bitrate4k').hide();
@@ -86,10 +85,10 @@
           });
 
           /* Changed bit rate options according to picture quality */
-          var bitrate_4k_val = $('#bitrate4k').val();
-          var bitrate_2k_val = $('#bitrate2k').val();
-          var bitrate_1k_val = $('#bitrate1k').val();
-          var bitrate_06k_val = $('#bitrate06k').val();
+          var bitrate_4k_val = prevent_xss($('#bitrate4k').val());
+          var bitrate_2k_val = prevent_xss($('#bitrate2k').val());
+          var bitrate_1k_val = prevent_xss($('#bitrate1k').val());
+          var bitrate_06k_val = prevent_xss($('#bitrate06k').val());
           changeMovieSize();
           $('#bitrate4k').val(bitrate_4k_val);
           $('#bitrate2k').val(bitrate_2k_val);
@@ -107,11 +106,10 @@
           } else {
               bitrate = $('#bitrate06k').val();
           }
-          if (bitrate == "-1") {
-              changeAutoBitrateText();
-          }
+          bitrate = prevent_xss(bitrate);
 
           changeBitrate();
+          changeAudioSamplingRate();
           changeTimeout();
 
           $("#server_url_text").focus(function(){
@@ -138,9 +136,6 @@
           $("#stream_stop_button").on("click", function(){
               $(this).focus();
           });
-          $("#measure_bitrate_button").on("click", function(){
-              $(this).focus();
-          });
         });
 
         function changeStatusReady() {
@@ -157,11 +152,8 @@
             $("#submit_button").prop("disabled", false);
             $("#movie_size_tr").on("click", function(){openMovieSize();});
             $("#bitrate_tr").on("click", function(){openBitrate();});
+            $("#audio_sampling_rate_tr").on("click", function(){openAudioSamplingRate();});
             $("#timeout_tr").on("click", function(){openTimeout();});
-
-            if ($("#tmp_bitrate").val() == "-1") {
-                $("#measure_bitrate_button").prop("disabled", false);
-            }
         }
 
         function changeStatusLive() {
@@ -178,6 +170,7 @@
             $("#submit_button").prop("disabled", true);
             $("#movie_size_tr").off("click");
             $("#bitrate_tr").off("click");
+            $("#audio_sampling_rate_tr").off("click");
             $("#timeout_tr").off("click");
             $("#measure_bitrate_button").prop("disabled", true);
         }
@@ -195,11 +188,8 @@
             $("#submit_button").prop("disabled", false);
             $("#movie_size_tr").on("click", function(){openMovieSize();});
             $("#bitrate_tr").on("click", function(){openBitrate();});
+            $("#audio_sampling_rate_tr").on("click", function(){openAudioSamplingRate();});
             $("#timeout_tr").on("click", function(){openTimeout();});
-
-            if ($("#tmp_bitrate").val() == "-1") {
-                $("#measure_bitrate_button").prop("disabled", false);
-            }
         }
 
         function changeMovieSize() {
@@ -281,12 +271,10 @@
         function changeBitrateCheck(val) {
             var movie = $("#movie").val();
             if (movie == 'MOVIE4K') {
-                $('#check_bitrate_auto').hide();
                 $('#check_bitrate_40_4k').hide();
                 $('#check_bitrate_20_4k').hide();
                 $('#check_bitrate_12_4k').hide();
                 if (val == "-1") {
-                    $('#check_bitrate_auto').show();
                 } else if (val == "40") {
                     $('#check_bitrate_40_4k').show();
                 } else if (val == "20") {
@@ -295,13 +283,10 @@
                     $('#check_bitrate_12_4k').show();
                 }
             } else if (movie == 'MOVIE2K') {
-                $('#check_bitrate_auto').hide();
                 $('#check_bitrate_16_2k').hide();
                 $('#check_bitrate_6_2k').hide();
                 $('#check_bitrate_3_2k').hide();
-                if (val == "-1") {
-                    $('#check_bitrate_auto').show();
-                } else if (val == "16") {
+                if (val == "16") {
                     $('#check_bitrate_16_2k').show();
                 } else if (val == "6") {
                     $('#check_bitrate_6_2k').show();
@@ -309,13 +294,10 @@
                     $('#check_bitrate_3_2k').show();
                 }
             } else if (movie == 'MOVIE1K') {
-                $('#check_bitrate_auto').hide();
                 $('#check_bitrate_2_1k').hide();
                 $('#check_bitrate_085_1k').hide();
                 $('#check_bitrate_05_1k').hide();
-                if (val == "-1") {
-                    $('#check_bitrate_auto').show();
-                } else if (val == "2") {
+                if (val == "2") {
                     $('#check_bitrate_2_1k').show();
                 } else if (val == "0.85") {
                     $('#check_bitrate_085_1k').show();
@@ -323,19 +305,33 @@
                     $('#check_bitrate_05_1k').show();
                 }
             } else {
-                $('#check_bitrate_auto').hide();
                 $('#check_bitrate_1_06k').hide();
                 $('#check_bitrate_036_06k').hide();
                 $('#check_bitrate_025_06k').hide();
-                if (val == "-1") {
-                    $('#check_bitrate_auto').show();
-                } else if (val == "1") {
+                if (val == "1") {
                     $('#check_bitrate_1_06k').show();
                 } else if (val == "0.36") {
                     $('#check_bitrate_036_06k').show();
                 } else if (val == "0.25") {
                     $('#check_bitrate_025_06k').show();
                 }
+            }
+        }
+
+        function changeAudioSamplingRate() {
+            $("#audio_sampling_rate_value").text($("#audio_sampling_rate_text option:selected").text());
+            changeAudioSamplingRateCheck($('#audio_sampling_rate_text').val());
+        }
+
+         function changeAudioSamplingRateCheck(val) {
+            $('#check_audio_sampling_rate_44100').hide();
+            $('#check_audio_sampling_rate_48000').hide();
+            if (val == "44100") {
+                $('#check_audio_sampling_rate_44100').show();
+            } else if (val == "48000") {
+                $('#check_audio_sampling_rate_48000').show();
+            } else {
+                $('#check_audio_sampling_rate_48000').show();
             }
         }
 
@@ -391,7 +387,6 @@
                 $("#movie").val($("#tmp_movie").val());
                 changeMovieSize();
                 changeBitrate();
-                resetAutoBitrateText();
             }
             closeMovieSize();
         }
@@ -407,15 +402,6 @@
             } else {
                 $("#tmp_bitrate").val($("#bitrate06k").val());
             }
-
-            var auto_bitrate = $("#auto_bitrate").val();
-            if (auto_bitrate != "" && auto_bitrate != "null") {
-                $("#tmp_auto_bitrate").val(auto_bitrate);
-                $("#auto_bitrate_label").text("AUTO (" + auto_bitrate + " Mbps)");
-            } else {
-                $("#tmp_auto_bitrate").val("");
-                $("#auto_bitrate_label").text("AUTO");
-            }
             selectBitrate($("#tmp_bitrate").val());
 
             var bitrate = $('#slide_bitrate');
@@ -429,20 +415,10 @@
         }
 
         function selectBitrate(bitrate) {
-            if (measure_bitrate_flag == 1) {
-                return;
-            }
+            bitrate = prevent_xss(bitrate);
             $("#tmp_bitrate").val(bitrate);
             changeBitrateCheck(bitrate);
-            if (bitrate == "-1") {
-                if ($("#tmp_auto_bitrate").val() == "") {
-                    $("#slide_bitrate_ok").prop("disabled", true);
-                }
-                $("#measure_bitrate_button").prop("disabled", false);
-            } else {
-                $("#slide_bitrate_ok").prop("disabled", false);
-                $("#measure_bitrate_button").prop("disabled", true);
-            }
+            $("#slide_bitrate_ok").prop("disabled", false);
         }
 
         function cancelBitrate() {
@@ -460,7 +436,7 @@
         }
 
         function decideBitrate() {
-            var bitrate = $("#tmp_bitrate").val();
+            var bitrate = prevent_xss($("#tmp_bitrate").val());
             var movie = $("#movie").val();
             if (movie == 'MOVIE4K') {
                 $("#bitrate4k").val(bitrate);
@@ -471,16 +447,36 @@
             } else {
                 $("#bitrate06k").val(bitrate);
             }
-
-            if (bitrate == "-1") {
-                $("#auto_bitrate").val($("#tmp_auto_bitrate").val());
-                changeAutoBitrateText();
-            } else {
-                resetAutoBitrateText();
-            }
-
             changeBitrate();
             closeBitrate();
+        }
+
+        function openAudioSamplingRate() {
+            var audio_sampling_rate = $('#slide_audio_sampling_rate');
+            audio_sampling_rate.animate({'left' : 0 }, 300);
+            $("#tmp_audio_sampling_rate").val($("#audio_sampling_rate_text").val());
+        }
+
+        function closeAudioSamplingRate() {
+            var audio_sampling_rate = $('#slide_audio_sampling_rate');
+            var body = $(document.body);
+            audio_sampling_rate.animate({'left' : body.outerWidth() }, 300);
+        }
+
+        function selectAudioSamplingRate(audio_sampling_rate) {
+            $("#tmp_audio_sampling_rate").val(audio_sampling_rate);
+            changeAudioSamplingRateCheck(audio_sampling_rate);
+        }
+
+        function cancelAudioSamplingRate() {
+            closeAudioSamplingRate();
+            changeAudioSamplingRateCheck($("#audio_sampling_rate_text").val());
+        }
+
+        function decideAudioSamplingRate() {
+            $("#audio_sampling_rate_text").val($("#tmp_audio_sampling_rate").val());
+            changeAudioSamplingRate();
+            closeAudioSamplingRate();
         }
 
         function openTimeout() {
@@ -511,53 +507,13 @@
             closeTimeout();
         }
 
-        function measure_bitrate() {
-            if (measure_bitrate_flag == 1) {
-                return;
-            }
-            measure_bitrate_flag = 1;
-            $("#slide_bitrate_ok").prop("disabled", true);
-            $("#slide_bitrate_cancel").prop("disabled", true);
-            $.ajax({
-                url: '/measure_bitrate',
-                type: 'POST',
-                dataType: 'text',
-                data: {'server-url': $("#server_url_text").val(), 'stream-name': end($("#stream_name_text").val()), 'movie-size': $("#movie").val()},
-                cache: false,
-                timeout: 20000
-            })
-            .done(function(data) {
-                if (data != "" && data != "0") {
-                    $("#tmp_auto_bitrate").val(data);
-                    $("#auto_bitrate_label").text("AUTO (" + data + " Mbps)");
-                    $("#slide_bitrate_ok").prop("disabled", false);
-                }
-            }).always(function() {
-                measure_bitrate_flag = 0;
-                $("#slide_bitrate_cancel").prop("disabled", false);
-            });
-        }
-
-        function changeAutoBitrateText() {
-            var movie = $('#movie').val();
-            var bitrate = $("#auto_bitrate").val();
-            if(movie == 'MOVIE4K'){
-                $('#bitrate4k option[value="-1"]').text("AUTO (" + bitrate + " Mbps)");
-            } else if(movie == 'MOVIE2K'){
-                $('#bitrate2k option[value="-1"]').text("AUTO (" + bitrate + " Mbps)");
-            } else if(movie == 'MOVIE1K'){
-                $('#bitrate1k option[value="-1"]').text("AUTO (" + bitrate + " Mbps)");
-            } else {
-                $('#bitrate06k option[value="-1"]').text("AUTO (" + bitrate + " Mbps)");
-            }
-        }
-
-        function resetAutoBitrateText() {
-            $("#auto_bitrate").val("");
-            $('#bitrate4k option[value="-1"]').text("AUTO");
-            $('#bitrate2k option[value="-1"]').text("AUTO");
-            $('#bitrate1k option[value="-1"]').text("AUTO");
-            $('#bitrate06k option[value="-1"]').text("AUTO");
+        function prevent_xss(string){
+          return string
+              .replace(/\&/g, '&amp;')
+              .replace(/\</g, '&lt;')
+              .replace(/\>/g, '&gt;')
+              .replace(/\"/g, '&quot;')
+              .replace(/\'/g, '&#x27;');
         }
 
     </script>
@@ -586,14 +542,14 @@
         <div id="server_url_box" class="bottom_border">
           <div class="youtube_padding">
             <label id="server_url_label" class="i18n_SERVER_URL youtube_item_label"></label>
-            <input type='text' id="server_url_text" name='server_url' class="i18n_placeholder_INPUT_PLACEHOLDER settings_item_input">
+            <input type='text' id="server_url_text" name='server_url' onchange="this.value = prevent_xss(this.value)" class="i18n_placeholder_INPUT_PLACEHOLDER settings_item_input">
           </div>
         </div>
 
         <div id="stream_name_box">
           <div class="youtube_padding">
             <label id="stream_name_label" class="i18n_STREAM_NAME youtube_item_label"></label>
-            <input type='text' id="stream_name_text" name='stream_name' class="i18n_placeholder_INPUT_PLACEHOLDER settings_item_input">
+            <input type='text' id="stream_name_text" name='stream_name' onchange="this.value = prevent_xss(this.value)" class="i18n_placeholder_INPUT_PLACEHOLDER settings_item_input">
           </div>
         </div>
       </div>
@@ -629,6 +585,19 @@
             </td>
           </tr>
         </table>
+        <table id="settings_audio_sampling_rate_table" class="settings_table bottom_border">
+          <tr id="audio_sampling_rate_tr">
+            <td id="audio_sampling_rate_table_head_1">
+              <label id="audio_sampling_rate_label" class="i18n_AUDIO_SAMPLING_RATE settings_item_label"></label>
+            </td>
+            <td id="audio_sampling_rate_table_head_2">
+              <label id="audio_sampling_rate_value" class="settings_value">48.0KHz</label>
+            </td>
+            <td id="audio_sampling_rate_table_head_3">
+              <img src="img/102.png" class="arrow_icon">
+            </td>
+          </tr>
+        </table>
         <table id="settings_timeout_table" class="settings_table">
           <tr id="timeout_tr">
             <td id="timeout_table_head_1">
@@ -654,34 +623,34 @@
       <span type="hidden" id="encryption_iv"></span>
 
       <select id="movie" name="movie" hidden>
-        <option value="MOVIE4K">4K(3840x1920) 30fps</option>
-        <option value="MOVIE2K">2K(1920x960) 30fps</option>
-        <option value="MOVIE1K">1K(1024x512) 30fps</option>
-        <option value="MOVIE06K">0.6K(640x320) 30fps</option>
+        <option value="MOVIE4K">4K(3840x2160) 30fps</option>
+        <option value="MOVIE2K">2K(1920x1080) 30fps</option>
+        <option value="MOVIE1K">1K(1024x576) 30fps</option>
+        <option value="MOVIE06K">0.6K(640x360) 30fps</option>
       </select>
       <select id="bitrate4k" name="bitrate4k">
-        <option value="-1">AUTO</option>
         <option value="40">40Mbps</option>
         <option value="20">20Mbps</option>
         <option value="12">12Mbps</option>
       </select>
       <select id="bitrate2k" name="bitrate2k">
-        <option value="-1">AUTO</option>
         <option value="16">16Mbps</option>
         <option value="6">6Mbps</option>
         <option value="3">3Mbps</option>
       </select>
       <select id="bitrate1k" name="bitrate1k">
-        <option value="-1">AUTO</option>
         <option value="2">2Mbps</option>
         <option value="0.85">0.85Mbps</option>
         <option value="0.5">0.5Mbps</option>
       </select>
       <select id="bitrate06k" name="bitrate06k">
-        <option value="-1">AUTO</option>
         <option value="1">1Mbps</option>
         <option value="0.36">0.36Mbps</option>
         <option value="0.25">0.25Mbps</option>
+      </select>
+      <select id="audio_sampling_rate_text" name="audio_sampling_rate" hidden>
+        <option value="44100">44.1KHz</option>
+        <option value="48000">48.0KHz</option>
       </select>
       <select id="no_operation_timeout_minute_text" name="no_operation_timeout_minute" hidden>
         <option value="3" class="i18n_add_MINUTE">3</option>
@@ -690,8 +659,6 @@
         <option value="20" class="i18n_add_MINUTE">20</option>
         <option value="-1" class="i18n_DISABLED"></option>
       </select>
-
-      <input id="auto_bitrate" name="auto_bitrate" type="hidden">
 
       <nav id="slide_movie_size" class="slide_menu">
         <div id="slide_movie_label_box" class="slide_head_box">
@@ -703,7 +670,7 @@
           <table id="slide_movie_size_table" class="settings_table">
             <tr class="bottom_border" onclick="selectMovieSize('MOVIE4K')">
               <td id="slide_movie_size_table_head_1">
-                <label id="movie_size_4k" class="settings_item_label">4K(3840x1920) 30fps</label>
+                <label id="movie_size_4k" class="settings_item_label">4K(3840x2160) 30fps</label>
               </td>
               <td class="slide_check">
                 <img id="check_4k" src="img/101.png" class="check_icon">
@@ -711,7 +678,7 @@
             </tr>
             <tr class="bottom_border" onclick="selectMovieSize('MOVIE2K')">
               <td>
-                <label id="movie_size_2k" class="settings_item_label">2K(1920x960) 30fps</label>
+                <label id="movie_size_2k" class="settings_item_label">2K(1920x1080) 30fps</label>
               </td>
               <td>
                 <img id="check_2k" src="img/101.png" class="check_icon">
@@ -719,7 +686,7 @@
             </tr>
             <tr class="bottom_border" onclick="selectMovieSize('MOVIE1K')">
               <td>
-                <label id="movie_size_1k" class="settings_item_label">1K(1024x512) 30fps</label>
+                <label id="movie_size_1k" class="settings_item_label">1K(1024x576) 30fps</label>
               </td>
               <td>
                 <img id="check_1k" src="img/101.png" class="check_icon">
@@ -727,7 +694,7 @@
             </tr>
             <tr onclick="selectMovieSize('MOVIE06K')">
               <td>
-                <label id="movie_size_06k" class="settings_item_label">0.6K(640x320) 30fps</label>
+                <label id="movie_size_06k" class="settings_item_label">0.6K(640x360) 30fps</label>
               </td>
               <td>
                 <img id="check_06k" src="img/101.png" class="check_icon">
@@ -854,27 +821,36 @@
           </table>
         </div>
 
-        <div id="slide_auto_bitrate_box" class="slide_item_box">
-          <table id="slide_auto_bitrate_table" class="settings_table">
-            <tr onclick="selectBitrate('-1')">
-              <td class="slide_bitrate_table_head">
-                <label id="auto_bitrate_label" class="settings_item_label">AUTO</label>
+        <input type="hidden" id="tmp_bitrate">
+      </nav>
+      <nav id="slide_audio_sampling_rate" class="slide_menu">
+        <div id="slide_audio_sampling_rate_label_box" class="slide_head_box">
+          <button id="slide_audio_sampling_rate_cancel" type='button' onclick="cancelAudioSamplingRate()" class="slide_head_button slide_cancel_button">Cancel</button>
+          <label id="slide_audio_sampling_rate_label" class="i18n_AUDIO_SAMPLING_RATE slide_head_label"></label>
+          <button id="slide_audio_sampling_rate_ok" type='button' onclick="decideAudioSamplingRate()" class="slide_head_button slide_ok_button">OK</button>
+        </div>
+        <div id="slide_audio_sampling_rate_box" class="slide_item_box">
+          <table id="slide_audio_sampling_rate_table" class="settings_table">
+            <tr class="bottom_border" onclick="selectAudioSamplingRate('44100')">
+              <td id="slide_audio_sampling_rate_table_head_1">
+                <label id="slide_audio_sampling_rate_44100" class="settings_item_label">44.1KHz</label>
               </td>
               <td class="slide_check">
-                <img id="check_bitrate_auto" src="img/101.png" class="check_icon">
+                <img id="check_audio_sampling_rate_44100" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr class="bottom_border" onclick="selectAudioSamplingRate('48000')">
+              <td>
+                <label id="slide_audio_sampling_rate_48000" class="settings_item_label">48.0KHz</label>
+              </td>
+              <td>
+                <img id="check_audio_sampling_rate_48000" src="img/101.png" class="check_icon">
               </td>
             </tr>
           </table>
+          <input type="hidden" id="tmp_audio_sampling_rate">
         </div>
 
-        <div id="measure_bitrate_description">
-          <label class="i18n_MEASUREMENT_DESCRIPTION"></label>
-        </div>
-
-        <div>
-          <button id="measure_bitrate_button" type='button' onclick="measure_bitrate()" class="i18n_MEASUREMENT"></button>
-        </div>
-        <input type="hidden" id="tmp_bitrate">
       </nav>
 
       <nav id="slide_timeout" class="slide_menu">
@@ -928,7 +904,6 @@
           </table>
         </div>
         <input type="hidden" id="tmp_timeout">
-        <input type="hidden" id="tmp_auto_bitrate">
       </nav>
 
     </form>

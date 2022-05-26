@@ -28,7 +28,7 @@ public class Theta360SQLiteOpenHelper extends SQLiteOpenHelper {
 
     private static final String DB = "theta360_setting.db";
     private static final int DB_VERSION = 1;
-    private static final String CREATE_TABLE_SQL = "create table theta360_setting ( id INTEGER primary key,server_url TEXT,stream_name TEXT,crypt_text TEXT,movie_width INTEGER,movie_height INTEGER,fps REAL,bitrate TEXT,auto_bitrate TEXT,no_operation_timeout_minute INTEGER, status TEXT);";
+    private static final String CREATE_TABLE_SQL = "create table theta360_setting ( id INTEGER primary key,server_url TEXT,stream_name TEXT,crypt_text TEXT,movie_width INTEGER,movie_height INTEGER,fps REAL,bitrate TEXT,auto_bitrate TEXT,audio_sampling_rate INTEGER,no_operation_timeout_minute INTEGER, status TEXT);";
     private static final String DROP_TABLE_SQL = "drop table theta360_setting;";
 
     public Theta360SQLiteOpenHelper(Context c) {

@@ -3,16 +3,24 @@
     package="com.pedro.rtpstreamer"
     >
 
+  <uses-permission android:name="android.permission.FLASHLIGHT"/>
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+  <!--some devices need read permission to create folders or files-->
+  <uses-permission android:name="android.permission.READ_INTERNAL_STORAGE"/>
+  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
   <uses-permission android:name="android.permission.INTERNET"/>
   <uses-permission android:name="android.permission.RECORD_AUDIO"/>
   <uses-permission android:name="android.permission.CAMERA"/>
-  <!-- some devices need it -->
-  <uses-feature android:name="android.hardware.camera"/>
-  <uses-feature android:name="android.hardware.camera2.full"/>
-  <uses-feature android:name="android.hardware.camera2.autofocus"/>
+
+  <!--needed by background Rtp service to keep service alive-->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+
+  <!--Optional for play store-->
+  <uses-feature android:name="android.hardware.camera" android:required="false" />
+  <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
   <application
+      android:requestLegacyExternalStorage="true"
       android:allowBackup="true"
       android:icon="@mipmap/ic_launcher"
       android:supportsRtl="true"
@@ -24,6 +32,7 @@
         android:screenOrientation="portrait"
         >
       <intent-filter>
+        <action android:name="android.intent.action.VIEW"/>
         <action android:name="android.intent.action.MAIN"/>
 
         <category android:name="android.intent.category.LAUNCHER"/>
@@ -80,16 +89,6 @@
         android:screenOrientation="portrait"
         />
     <activity
-        android:name=".displayexample.DisplayRtmpActivity"
-        android:label="@string/display_rtmp"
-        android:screenOrientation="portrait"
-        />
-    <activity
-        android:name=".displayexample.DisplayRtspActivity"
-        android:label="@string/display_rtsp"
-        android:screenOrientation="portrait"
-        />
-    <activity
         android:name=".openglexample.OpenGlRtmpActivity"
         android:label="@string/opengl_rtmp"
         android:screenOrientation="portrait"
@@ -98,6 +97,22 @@
         android:name=".openglexample.OpenGlRtspActivity"
         android:label="@string/opengl_rtsp"
         android:screenOrientation="portrait"
+        />
+    <activity
+        android:name=".displayexample.DisplayActivity"
+        android:label="@string/display_rtmp"
+        android:screenOrientation="portrait"
+        />
+    <activity
+        android:name=".backgroundexample.BackgroundActivity"
+        android:label="@string/service_rtp"
+        />
+
+    <service android:name=".backgroundexample.RtpService"
+        />
+
+    <service android:name=".displayexample.DisplayService"
+        android:foregroundServiceType="mediaProjection"
         />
   </application>
 

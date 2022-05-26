@@ -24,6 +24,7 @@ import android.content.IntentFilter;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.graphics.Color;
 import android.icu.text.DateFormat;
 import android.icu.text.SimpleDateFormat;
 import android.media.AudioManager;
@@ -32,21 +33,23 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.KeyEvent;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Switch;
+import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 import com.github.faucamp.simplertmp.origin.SequenceNumberStorage;
 import com.github.faucamp.simplertmp.origin.CheckIsStreamVideo;
 import com.pedro.rtplibrary.view.OpenGlView;
-import com.theta360.cloudstreaming.Extend.RtmpExtend;
+import com.pedro.rtplibrary.rtmp.RtmpCamera1;
 import com.theta360.cloudstreaming.Util.LogUtilDebugTree;
 import com.theta360.cloudstreaming.camera.CameraPreview;
 import com.theta360.cloudstreaming.httpserver.AndroidWebServer;
 import com.theta360.cloudstreaming.httpserver.Theta360SQLiteOpenHelper;
 import com.theta360.cloudstreaming.receiver.LiveStreamingReceiver;
-import com.theta360.cloudstreaming.receiver.MeasureBitrateReceiver;
 import com.theta360.cloudstreaming.settingdata.Bitrate;
 import com.theta360.cloudstreaming.settingdata.SettingData;
 import com.theta360.cloudstreaming.settingdata.StatusType;
@@ -57,14 +60,24 @@ import com.theta360.pluginlibrary.values.LedColor;
 import com.theta360.pluginlibrary.values.LedTarget;
 import java.io.File;
 import java.io.FileFilter;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import net.ossrs.rtmp.ConnectCheckerRtmp;
+import com.pedro.rtmp.utils.ConnectCheckerRtmp;
+import com.theta360.pluginlibrary.values.TextArea;
+import com.theta360.pluginlibrary.values.ThetaModel;
+
 import timber.log.Timber;
 
+import static android.view.KeyEvent.KEYCODE_POWER;
 import static com.theta360.cloudstreaming.httpserver.AndroidWebServer.PRIMARY_KEY_ID;
+import static com.theta360.cloudstreaming.httpserver.AndroidWebServer.decodeStreamName;
+import static com.theta360.cloudstreaming.httpserver.AndroidWebServer.encodeStreamName;
+import static com.theta360.pluginlibrary.values.ThetaModel.isZ1Model;
 import static java.lang.Math.pow;
 
 public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
@@ -73,11 +86,40 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
     private final double BIT_TO_MBIT = 1 / pow(10, 6);
     private final long CONNECTION_FAILED_INTERVAL_MSEC = 2000;
     private final int LOG_DELETE_ELAPSED_DAYS = 30;
+    private final String LABELS_MOVIE_SIZE_4K = "4K(3840x2160) 30fps";
+    private final String LABELS_MOVIE_SIZE_2K = "2K(1920x1080) 30fps";
+    private final String LABELS_MOVIE_SIZE_1K = "1K(1024x576) 30fps";
+    private final String LABELS_MOVIE_SIZE_06K = "0.6K(640x320) 30fps";
+    private final String LABELS_BITRATE_4K_40 = "40Mbps";
+    private final String LABELS_BITRATE_4K_20 = "20Mbps";
+    private final String LABELS_BITRATE_4K_12 = "12Mbps";
+    private final String LABELS_BITRATE_2K_16 = "16Mbps";
+    private final String LABELS_BITRATE_2K_6 = "6Mbps";
+    private final String LABELS_BITRATE_2K_3 = "3Mbps";
+    private final String LABELS_BITRATE_1K_2 = "2Mbps";
+    private final String LABELS_BITRATE_1K_085 = "0.85Mbps";
+    private final String LABELS_BITRATE_1K_05 = "0.5Mbps";
+    private final String LABELS_BITRATE_06K_1 = "1Mbps";
+    private final String LABELS_BITRATE_06K_036 = "0.36Mbps";
+    private final String LABELS_BITRATE_06K_025 = "0.25Mbps";
+    private final String LABELS_SAMPLING_RATE_48000 = "48.0KHz";
+    private final String LABELS_SAMPLING_RATE_44100 = "44.1KHz";
 
-    private RtmpExtend rtmpExtend;
+    private RtmpCamera1  mRtmpCamera1;
 
     private AudioManager am;
+    private TextView status;
+    private TextView statusText;
+    private Button liveButton;
+    private Spinner movieSize;
+    private Spinner bitrate;
+    private ArrayAdapter adapter2;
+    private Spinner samplingRate;
     private EditText etUrl;
+    private EditText streamName;
+    private int lcdBrightness = 0;
+    private int ledPowerBrightness = 0;
+    private int ledStatusBrightness = 0;
     private Context con;
     private OpenGlView openGlView;
     private final DateFormat df = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
@@ -93,6 +135,8 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
     private AndroidWebServer webUI;
     private Boolean settingFix;
     private CameraPreview cameraPreview;
+    private Boolean spinnerSelected = false;
+    private Boolean isConnectionSuccess = false;
 
     private static Object lock;
     private Handler handler;
@@ -103,6 +147,10 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
 
     private long lastConnectionFailedErrorTime = 0;
 
+    private final String[] itemMovieSize_V = {LABELS_MOVIE_SIZE_4K, LABELS_MOVIE_SIZE_2K, LABELS_MOVIE_SIZE_1K, LABELS_MOVIE_SIZE_06K};
+    private final String[] itemMovieSize_X = {LABELS_MOVIE_SIZE_4K, LABELS_MOVIE_SIZE_2K, LABELS_MOVIE_SIZE_1K};
+    private final String[] itemSamplingRate = {LABELS_SAMPLING_RATE_48000, LABELS_SAMPLING_RATE_44100};
+
     private LiveStreamingReceiver mLiveStreamingReceiver;
     private LiveStreamingReceiver.Callback onLiveStreamingReceiver = new LiveStreamingReceiver.Callback() {
         @Override
@@ -112,25 +160,21 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         }
     };
 
-    private MeasureBitrateReceiver mMeasureBitrateReceiver;
-    private MeasureBitrateReceiver.Callback onMeasureBitrateReceiver = new MeasureBitrateReceiver.Callback() {
-        @Override
-        public void callMeasureBitrateCallback(String serverUrl, String streamName, int width, int height) {
-            if (scheduleStreaming != null)
-                scheduleStreaming.setMeasureBitrate(serverUrl, streamName, width, height);
-        }
-    };
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        getWindow().setStatusBarColor(Color.BLACK);
 
         // Exclusion control
         lock = new Object();
         handler = new Handler();
 
         con = getApplicationContext();
+
+        if(ThetaModel.isVCameraModel()) {
+            setAutoClose(false);
+        }
 
         // Initializa log file
         DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
@@ -140,9 +184,9 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         Timber.plant(new LogUtilDebugTree(logFileDirPath, logFileName));
         // Log Header
         Timber.i("\n\n*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*\n"
-            + "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*\n"
-            + "\n    logging start ... " + df.format(new Date(System.currentTimeMillis()))
-            + "\n\n");
+                + "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*\n"
+                + "\n    logging start ... " + df.format(new Date(System.currentTimeMillis()))
+                + "\n\n");
 
         // Delete log after LOG_DELETE_ELAPSED_DAYS days
         long logDeleteElapsedMillis = currentTimeMillis - LOG_DELETE_ELAPSED_DAYS * (1000L * 60L * 60L * 24L);
@@ -167,10 +211,13 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         setContentView(R.layout.activity_main);
         openGlView = findViewById(R.id.surfaceView);
         etUrl = findViewById(R.id.et_rtp_url);
+        streamName = findViewById(R.id.et_stream_key);
 
         // Initialize LED
-        if (isZ1()) {
-            notificationLedHide(LedTarget.LED4); // camera
+        if (ThetaModel.isVCameraModel()) {
+            if (isZ1Model()) {
+                notificationLedHide(LedTarget.LED4); // カメラ
+            }
         }
         changeStartupLED();
 
@@ -179,20 +226,62 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         dbObject = hlpr.getWritableDatabase();
         updateStatus(StatusType.RUNNING);
 
-        rtmpExtend = new RtmpExtend(openGlView, this);
-        cameraPreview = new CameraPreview();
-
-        // Forbid editing EditText
-        etUrl.setEnabled(false);
-        ((EditText) findViewById(R.id.txtwidth)).setEnabled(false);
-        ((EditText) findViewById(R.id.txtheight)).setEnabled(false);
-        ((EditText) findViewById(R.id.txtframe)).setEnabled(false);
-        ((EditText) findViewById(R.id.txtbitrate)).setEnabled(false);
-        ((Switch) findViewById(R.id.swUsePreview)).setChecked(true);
+        if(ThetaModel.isVCameraModel()) {
+            cameraPreview = new CameraPreview();
+        }
+        status = findViewById(R.id.live_status);
+        statusText = findViewById(R.id.status_text);
+        liveButton = findViewById(R.id.live_button);
+        movieSize = findViewById(R.id.txtwidth);
+        bitrate = findViewById(R.id.txtbitrate);
+        samplingRate = findViewById(R.id.textAudioSamplingRate);
+        if(ThetaModel.isVCameraModel()) {
+            ArrayAdapter<String> adapter1 = new ArrayAdapter<String>(this, R.layout.spinner_item, itemMovieSize_V);
+            adapter1.setDropDownViewResource(R.layout.spinner_dropdown_item);
+            movieSize.setAdapter(adapter1);
+        } else {
+            ArrayAdapter<String> adapter1 = new ArrayAdapter<String>(this, R.layout.spinner_item, itemMovieSize_X);
+            adapter1.setDropDownViewResource(R.layout.spinner_dropdown_item);
+            movieSize.setAdapter(adapter1);
+        }
+        ArrayAdapter<String> adapter3 = new ArrayAdapter<String>(this, R.layout.spinner_item, itemSamplingRate);
+        adapter3.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        samplingRate.setAdapter(adapter3);
+        movieSize.setSelection(1);
 
         am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 //        boolean micMute = am.isMicrophoneMute();
 //        Timber.d("micMute = " + micMute);
+
+        notificationCameraClose();
+        mRtmpCamera1 = new RtmpCamera1(openGlView, this);
+
+        findViewById(R.id.live_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (textInputCheck()) {
+                    setSettingData();
+                    if (scheduleStreaming != null)
+                        scheduleStreaming.setSchedule();
+                }
+            }
+        });
+
+        movieSize.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (!spinnerSelected) {
+                    setBitrateSpinner(position);
+                }
+                spinnerSelected = false;
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
 
         // set callback for pressing buttons
         setKeyCallback(new KeyCallback() {
@@ -201,17 +290,43 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                 Timber.i("onKeyLongPress");
 
                 if (keyCode == KeyReceiver.KEYCODE_MEDIA_RECORD) {
-                    exitProcess();
+                    if (ThetaModel.isVCameraModel()) {
+                        exitProcess();
+                    } else {
+                        if (mRtmpCamera1.isStreaming()) {
+                            if (scheduleStreaming != null) {
+                                scheduleStreaming.setSchedule();
+
+                                // 配信終了スレッド実行後にCloseするため遅延を入れる
+                                new Handler().postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        close();
+                                    }
+                                }, 500);
+                            }
+                        } else {
+                            setSettingData();
+                            close();
+                        }
+                    }
                 }
             }
 
             @Override
             public void onKeyDown(int keyCode, KeyEvent event) {
                 Timber.i("onKeyDown");
-
                 if (keyCode == KeyReceiver.KEYCODE_CAMERA) {
-                    if (scheduleStreaming != null)
-                        scheduleStreaming.setSchedule();
+                    if (textInputCheck()) {
+                        setSettingData();
+                        if (scheduleStreaming != null)
+                            scheduleStreaming.setSchedule();
+                    }
+                } else if (keyCode == KEYCODE_POWER) {
+                    if (mRtmpCamera1 != null && mRtmpCamera1.isStreaming()) {
+                        if (scheduleStreaming != null)
+                            scheduleStreaming.setSchedule();
+                    }
                 }
             }
 
@@ -235,10 +350,6 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         liveStreamingFilter.addAction(LiveStreamingReceiver.TOGGLE_LIVE_STREAMING);
         registerReceiver(mLiveStreamingReceiver, liveStreamingFilter);
 
-        mMeasureBitrateReceiver = new MeasureBitrateReceiver(onMeasureBitrateReceiver);
-        IntentFilter measureBitrateFilter = new IntentFilter();
-        measureBitrateFilter.addAction(MeasureBitrateReceiver.MEASURE_BITRATE);
-        registerReceiver(mMeasureBitrateReceiver, measureBitrateFilter);
     }
 
     @Override
@@ -260,8 +371,29 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(MainActivity.this, "Connection success", Toast.LENGTH_SHORT).show();
                 Timber.i("Rtmp サーバーへ 接続成功しました。");
+                notificationAudioMovStart();
+                status.setTextColor(getColor(R.color.colorStop));
+                status.setText("●");
+                statusText.setText(getResources().getString(R.string.message_live_streaming));
+                liveButton.setBackgroundResource(R.drawable.shape_rounded_corners_stop);
+                liveButton.setText(getResources().getString(R.string.stop_live_streaming));
+                etUrl.setEnabled(false);
+                streamName.setEnabled(false);
+                movieSize.setEnabled(false);
+                bitrate.setEnabled(false);
+                samplingRate.setEnabled(false);
+                updateStatus(StatusType.LIVE_STREAMING);
+                if(!ThetaModel.isVCameraModel()) {
+                    lcdBrightness = mRtmpCamera1.getLcdBrightness();
+                    mRtmpCamera1.ctrlBrightness(1);
+                    // ledId 3 = BLUE
+                    ledPowerBrightness = mRtmpCamera1.getLedPowerBrightness(3);
+                    ledStatusBrightness = mRtmpCamera1.getLedStatusBrightness(3);
+                    mRtmpCamera1.ctrlLedPowerBrightness(3, 1);
+                    mRtmpCamera1.ctrlLedStatusBrightness(3, 1);
+                }
+                isConnectionSuccess = true;
                 shutDownTimer.reset(true, noOperationTimeoutMSec);
             }
         });
@@ -278,17 +410,30 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(MainActivity.this, "Connection failed. " + reason, Toast.LENGTH_SHORT).show();
                 Timber.e("Connection to Rtmp server is failed." + reason);
                 shutDownTimer.reset(false, noOperationTimeoutMSec);
-                stopStreaming();
 
+                status.setTextColor(getColor(R.color.colorStop));
+                status.setText("!");
+                statusText.setText(getResources().getString(R.string.message_error_connect_server));
                 updateStatus(StatusType.ERROR_CONNECT_SERVER);
+                notificationAudioWarning();
+
                 if (System.currentTimeMillis() - lastConnectionFailedErrorTime > CONNECTION_FAILED_INTERVAL_MSEC) {
                     lastConnectionFailedErrorTime = System.currentTimeMillis();
                     playPPPSoundWithErrorLED();
                 }
                 settingPolling.changeStart();
+
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (scheduleStreaming != null) {
+                            scheduleStreaming.setSchedule();
+                        }
+                    }
+                }, 300);
+
             }
         });
     }
@@ -302,8 +447,29 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(MainActivity.this, "Disconnected", Toast.LENGTH_SHORT).show();
                 Timber.i("Rtmpサーバーから切断しました。");
+                if (isConnectionSuccess) {
+                    notificationAudioMovStop();
+                    status.setTextColor(getColor(R.color.colorStart));
+                    status.setText("●");
+                    statusText.setText(getResources().getString(R.string.message_stop_streaming));
+                    liveButton.setBackgroundResource(R.drawable.shape_rounded_corners_start);
+                    liveButton.setText(getResources().getString(R.string.start_live_streaming));
+                    etUrl.setEnabled(true);
+                    streamName.setEnabled(true);
+                    movieSize.setEnabled(true);
+                    bitrate.setEnabled(true);
+                    samplingRate.setEnabled(true);
+                    if(!ThetaModel.isVCameraModel()) {
+                        mRtmpCamera1.ctrlBrightness(lcdBrightness);
+                        // ledId 3 = BLUE
+                        mRtmpCamera1.ctrlLedPowerBrightness(3, ledPowerBrightness);
+                        mRtmpCamera1.ctrlLedStatusBrightness(3, ledStatusBrightness);
+                    }
+                    isConnectionSuccess = false;
+                } else {
+                    updateStatus(StatusType.ERROR_CONNECT_SERVER);
+                }
                 shutDownTimer.reset(false, noOperationTimeoutMSec);
             }
         });
@@ -319,7 +485,6 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(MainActivity.this, "Auth success", Toast.LENGTH_SHORT).show();
                 Timber.i("Authenticated.");
                 shutDownTimer.reset(true, noOperationTimeoutMSec);
             }
@@ -336,7 +501,6 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(MainActivity.this, "Auth error", Toast.LENGTH_SHORT).show();
                 Timber.e("Authentication failed.");
                 shutDownTimer.reset(false, noOperationTimeoutMSec);
             }
@@ -348,11 +512,10 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
     protected void onPause() {
         super.onPause();
         unregisterReceiver(mLiveStreamingReceiver);
-        unregisterReceiver(mMeasureBitrateReceiver);
-        if (rtmpExtend != null && rtmpExtend.isStreaming()) {
-            rtmpExtend.stopStream();
-            cameraPreview.stop();
+        if (mRtmpCamera1 != null && mRtmpCamera1.isStreaming()) {
+            mRtmpCamera1.stopStream();
             shutDownTimer.reset(false, noOperationTimeoutMSec);
+            mRtmpCamera1.stopCamera();
         }
     }
 
@@ -397,8 +560,15 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
             return;
         }
 
-        // MEMO: The state that the distribution is stopped or is not being streamed, is used as the status before distribution.
-        if (!rtmpExtend.isStreaming()) {
+        if (settingData.getStreamName().isEmpty() || settingData.getServerUrl().isEmpty()) {
+            // No settings
+            updateStatus(StatusType.ERROR_NOT_USER_SETTING);
+            playPPPSoundWithErrorLED();
+            settingPolling.changeStart();
+            return;
+        }
+
+        if (!mRtmpCamera1.isStreaming()) {
             startStreaming();
             startDelayJudgment();
         } else {
@@ -442,45 +612,35 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
             }
             int movieW = settingData.getMovieWidth();
             int movieH = settingData.getMovieHeight();
-            double bitReate = Double.parseDouble(settingData.getBitRate());
+            double bitRate = Double.parseDouble(settingData.getBitRate());
 
-            // When the bit rate is AUTO, use the measured bit rate
-            if (bitReate == -1) {
-                bitReate = Double.parseDouble(settingData.getAutoBitRate());
-            }
-
-            // Pass each parameter to RTMP module
-            HashMap streamingParamMap = new HashMap();
-            streamingParamMap.put("width", String.valueOf(movieW));
-            streamingParamMap.put("height", String.valueOf(movieH));
-            streamingParamMap.put("fps", String.valueOf((int) settingData.getFps()));
-            streamingParamMap.put("bitrate", String.valueOf((int)(bitReate * 1000000)));
-
-            Timber.i("streaming settings: " + streamingParamMap.toString());
-
-            rtmpExtend.setStreamingParamMap(streamingParamMap);
+            int audioSamplingRate = settingData.getAudioSamplingRate();
 
             // Check video and audio preparation
-            if (rtmpExtend.prepareAudio() && rtmpExtend.prepareVideo()) {
+            if (mRtmpCamera1.prepareAudio(128 * 1024,audioSamplingRate, false, false, false)
+                    && mRtmpCamera1.prepareVideo(movieW, movieH, (int)settingData.getFps(), (int)(bitRate * 1000000),2,0) ) {
 
                 // Start streaming
                 CheckIsStreamVideo.init();
-                rtmpExtend.startStream(settingData.getServerUrl() + "/" + settingData.getStreamName());
+                mRtmpCamera1.startStream(settingData.getServerUrl() + "/" + settingData.getStreamName());
 
-                if (((Switch) findViewById(R.id.swUsePreview)).isChecked()) {
+                if (ThetaModel.isVCameraModel()) {
                     cameraPreview.start(openGlView.getSurfaceTexture());
-                } else {
-                    Timber.d("Can not be started except in the preview mode.");
                 }
-                if (rtmpExtend.isStreaming()) {
+
+                if (mRtmpCamera1.isStreaming()) {
                     changeStreamingLED();
-                    updateStatus(StatusType.LIVE_STREAMING);
                 } else {
                     // Illegal server URL
-                    cameraPreview.stop();
+                    if (ThetaModel.isVCameraModel()){
+                        cameraPreview.stop();
+                    }
                 }
             } else {
                 // Any hardware issues
+                status.setTextColor(getColor(R.color.colorStop));
+                status.setText("!");
+                statusText.setText(getResources().getString(R.string.message_error_initialization));
                 updateStatus(StatusType.ERROR_INITIALIZATION);
                 playPPPSoundWithErrorLED();
                 Timber.e("Failed to initialize audio or camera.");
@@ -492,8 +652,11 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         if (delayJudgmentService != null) {
             delayJudgmentService.shutdownNow();
         }
-        rtmpExtend.stopStream();
-        cameraPreview.stop();
+        mRtmpCamera1.stopStream();
+        if (ThetaModel.isVCameraModel()) {
+            cameraPreview.stop();
+        }
+        mRtmpCamera1.stop();
     }
 
     private void exitProcess() {
@@ -509,47 +672,67 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
     }
 
     private void changeStartupLED() {
-        if (isZ1()) {
-            notificationOledHide();
-            notificationOledTextShow(getString(R.string.oled_middle), "");
-        } else {
-            notificationLedHide(LedTarget.LED5); // Video
-            notificationLedHide(LedTarget.LED6); // LIVE
-            notificationLedHide(LedTarget.LED7); // Recording
-            notificationLedHide(LedTarget.LED8); // Error
+        if (ThetaModel.isVCameraModel()) {
+            if (isZ1Model()) {
+                notificationOledHide();
+                Map<TextArea, String> textMap = new HashMap<>();
+                textMap.put(TextArea.MIDDLE, getString(R.string.oled_middle));
+                textMap.put(TextArea.BOTTOM, "");
+                notificationOledTextShow(textMap);
+            } else {
+                notificationLedHide(LedTarget.LED5); // Video
+                notificationLedHide(LedTarget.LED6); // LIVE
+                notificationLedHide(LedTarget.LED7); // Recording
+                notificationLedHide(LedTarget.LED8); // Error
+            }
         }
     }
 
     private void changeReadyLED() {
-        if (isZ1()) {
-            notificationOledTextShow(getString(R.string.oled_middle), getString(R.string.oled_bottom_ready));
-        } else {
-            notificationLedShow(LedTarget.LED5); // Video
-            notificationLedShow(LedTarget.LED6); // LIVE
-            notificationLedHide(LedTarget.LED7); // Recording
-            notificationLedHide(LedTarget.LED8); // Error
+        if (ThetaModel.isVCameraModel()) {
+            if (isZ1Model()) {
+                Map<TextArea, String> textMap = new HashMap<>();
+                textMap.put(TextArea.MIDDLE, getString(R.string.oled_middle));
+                textMap.put(TextArea.BOTTOM, getString(R.string.oled_bottom_ready));
+                notificationOledTextShow(textMap);
+            } else {
+                notificationLedShow(LedTarget.LED5); // Video
+                notificationLedShow(LedTarget.LED6); // LIVE
+                notificationLedHide(LedTarget.LED7); // Recording
+                notificationLedHide(LedTarget.LED8); // Error
+            }
         }
     }
 
     private void changeStreamingLED() {
-        if (isZ1()) {
-            notificationOledTextShow(getString(R.string.oled_middle), getString(R.string.oled_bottom_streaming));
-        } else {
-            notificationLedShow(LedTarget.LED5); // Video
-            notificationLedShow(LedTarget.LED6); // LIVE
-            notificationLedBlink(LedTarget.LED7, LedColor.BLUE, 1000); // Recording
-            notificationLedHide(LedTarget.LED8); // Error
+        if (ThetaModel.isVCameraModel()) {
+            if (isZ1Model()) {
+                Map<TextArea, String> textMap = new HashMap<>();
+                textMap.put(TextArea.MIDDLE, getString(R.string.oled_middle));
+                textMap.put(TextArea.BOTTOM, getString(R.string.oled_bottom_streaming));
+                notificationOledTextShow(textMap);
+            } else {
+                notificationLedShow(LedTarget.LED5); // Video
+                notificationLedShow(LedTarget.LED6); // LIVE
+                notificationLedBlink(LedTarget.LED7, LedColor.BLUE, 1000); // Recording
+                notificationLedHide(LedTarget.LED8); // Error
+            }
         }
     }
 
     private void changeDelayStreamingLED() {
-        if (isZ1()) {
-            notificationOledTextShow(getString(R.string.oled_middle), getString(R.string.oled_bottom_streaming));
-        } else {
-            notificationLedShow(LedTarget.LED5); // Video
-            notificationLedShow(LedTarget.LED6); // LIVE
-            notificationLedBlink(LedTarget.LED7, LedColor.BLUE, 1000); // Recording
-            notificationLedBlink(LedTarget.LED8, LedColor.BLUE, 1000); // Error
+        if (ThetaModel.isVCameraModel()) {
+            if (isZ1Model()) {
+                Map<TextArea, String> textMap = new HashMap<>();
+                textMap.put(TextArea.MIDDLE, getString(R.string.oled_middle));
+                textMap.put(TextArea.BOTTOM, getString(R.string.oled_bottom_streaming));
+                notificationOledTextShow(textMap);
+            } else {
+                notificationLedShow(LedTarget.LED5); // Video
+                notificationLedShow(LedTarget.LED6); // LIVE
+                notificationLedBlink(LedTarget.LED7, LedColor.BLUE, 1000); // Recording
+                notificationLedBlink(LedTarget.LED8, LedColor.BLUE, 1000); // Error
+            }
         }
     }
 
@@ -561,13 +744,15 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
     }
 
     private void changeEndLED() {
-        if (isZ1()) {
-            notificationOledHide();
-        } else {
-            notificationLedHide(LedTarget.LED5); // Video
-            notificationLedHide(LedTarget.LED6); // LIVE
-            notificationLedHide(LedTarget.LED7); // Recording
-            notificationLedHide(LedTarget.LED8); // Error
+        if (ThetaModel.isVCameraModel()) {
+            if (isZ1Model()) {
+                notificationOledHide();
+            } else {
+                notificationLedHide(LedTarget.LED5); // Video
+                notificationLedHide(LedTarget.LED6); // LIVE
+                notificationLedHide(LedTarget.LED7); // Recording
+                notificationLedHide(LedTarget.LED8); // Error
+            }
         }
     }
 
@@ -575,11 +760,13 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
      * PPP(Error) sound playback and error LED control
      */
     private void playPPPSoundWithErrorLED() {
-        if (isZ1()) {
-            notificationErrorOccured();
-        } else {
-            notificationAudioWarning();
-            changeErrorLED();
+        if (ThetaModel.isVCameraModel()) {
+            if (isZ1Model()) {
+                notificationErrorOccured();
+            } else {
+                notificationAudioWarning();
+                changeErrorLED();
+            }
         }
     }
 
@@ -627,7 +814,6 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
 
     private class ScheduleStreaming implements Runnable {
         private boolean isScheduleStreaming = false;
-        private boolean isMeasureBitrate = false;
         private String measureServerUrl;
         private String measureStreamName;
         private int measureWidth = 0;
@@ -637,15 +823,6 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         // Schedule streaming
         public void setSchedule() {
             isScheduleStreaming = true;
-        }
-
-        // Schedule bit rate measurement
-        public void setMeasureBitrate(String serverUrl, String streamName, int width, int height) {
-            measureServerUrl = serverUrl;
-            measureStreamName = streamName;
-            measureWidth = width;
-            measureHeight = height;
-            isMeasureBitrate = true;
         }
 
         /**
@@ -658,10 +835,6 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         @Override
         public void run() {
             while(!isExit) {
-                // Changing bit rate AUTO
-                if (isMeasureBitrate) {
-                    measureBitrate();
-                }
 
                 // Ignore streaming instructions during streaming preparation.
                 if (!isScheduleStreaming) {
@@ -676,80 +849,6 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                     isScheduleStreaming = false;
                 }
             }
-        }
-
-        private void measureBitrate() {
-            int CHECK_TIME_SEC = 10;
-            double THRESHOLD = 0.8;
-
-            if (rtmpExtend.isStreaming()) {
-                isMeasureBitrate = false;
-                return;
-            }
-
-            double calculated_bitrate = 0;
-            // Temporary evacuation of set information
-            String tmpBitrate = settingData.getBitRate();
-            String tmpServerUrl = settingData.getServerUrl();
-            String tmpStreamName = settingData.getStreamName();
-            int tmpWidth = settingData.getMovieWidth();
-            int tmpHeight = settingData.getMovieHeight();
-            Boolean tmpSettingFix = settingFix;
-            settingData.setServerUrl(measureServerUrl);
-            settingData.setStreamName(measureStreamName);
-            Double maxBitrate = Double.parseDouble(Bitrate.getMaxBitrate(measureWidth));
-            // Deliver at the set upper bit rate
-            settingData.setBitRate(String.valueOf(maxBitrate));
-            settingData.setMovieWidth(measureWidth);
-            settingData.setMovieHeight(measureHeight);
-            settingFix = !(measureServerUrl.equals("") || measureStreamName.equals(""));
-            startStreaming();
-            SequenceNumberStorage.initSequenceNumber();
-
-            long startTimeMills = System.currentTimeMillis();
-            while(rtmpExtend.isStreaming()) {
-                if (System.currentTimeMillis() - startTimeMills < CHECK_TIME_SEC * 1000) {
-                    continue;
-                }
-                long averageByteSize = SequenceNumberStorage.calculateByte() / CHECK_TIME_SEC;
-                Timber.i("AverageByteSize is " + String.valueOf(averageByteSize));
-
-                calculated_bitrate = averageByteSize * BYTE_TO_BIT * BIT_TO_MBIT * THRESHOLD;
-                Timber.i("Calculated Bitrate is " + String.valueOf(calculated_bitrate));
-
-                stopStreaming();
-                changeReadyLED();
-                updateStatus(StatusType.STOP_STREAMING);
-                break;
-            }
-            settingData.setServerUrl(tmpServerUrl);
-            settingData.setStreamName(tmpStreamName);
-            settingData.setBitRate(tmpBitrate);
-            settingData.setMovieWidth(tmpWidth);
-            settingData.setMovieHeight(tmpHeight);
-            settingFix = tmpSettingFix;
-
-            // Decide bit rate
-            String bitrate;
-            if (calculated_bitrate < maxBitrate) {
-                bitrate = String.format("%.2f", calculated_bitrate);
-            } else {
-                bitrate = String.format("%.2f", maxBitrate);
-            }
-            // Erase extra 0 of bit rate
-            String bitrateLast = bitrate.substring(bitrate.length() - 1);
-            while(bitrateLast.equals("0")) {
-                bitrate = bitrate.substring(0, bitrate.length() - 1);
-                bitrateLast = bitrate.substring(bitrate.length() - 1);
-            }
-            if (bitrateLast.equals(".")) {
-                bitrate = bitrate.substring(0, bitrate.length() - 1);
-            }
-            // Pass the calculated bit rate to the screen
-            webUI.setMeasuredBitrate(bitrate);
-
-            isMeasureBitrate = false;
-            isScheduleStreaming = false;
         }
     }
 
@@ -853,7 +952,7 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                                 settingData.setMovieHeight(cursor.getInt(cursor.getColumnIndex("movie_height")));
                                 settingData.setFps(cursor.getDouble(cursor.getColumnIndex("fps")));
                                 settingData.setBitRate(cursor.getString(cursor.getColumnIndex("bitrate")));
-                                settingData.setAutoBitRate(cursor.getString(cursor.getColumnIndex("auto_bitrate")));
+                                settingData.setAudioSamplingRate(cursor.getInt(cursor.getColumnIndex("audio_sampling_rate")));
                                 settingData.setNoOperationTimeoutMinute(cursor.getInt(cursor.getColumnIndex("no_operation_timeout_minute")));
                                 settingData.setStatus(cursor.getString(cursor.getColumnIndex("status")));
                             } else {
@@ -863,15 +962,16 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                                 values.put("id", PRIMARY_KEY_ID);
 
                                 // 4k
-                                values.put("movie_width", Bitrate.MOVIE_WIDTH_4K);
-                                values.put("movie_height", Bitrate.MOVIE_HEIGHT_4K);
-                                values.put("bitrate", Bitrate.BITRATE_4K_DEFAULT);
+                                values.put("movie_width", Bitrate.MOVIE_WIDTH_2K);
+                                values.put("movie_height", Bitrate.MOVIE_HEIGHT_2K);
+                                values.put("bitrate", Bitrate.BITRATE_2K_DEFAULT);
                                 values.put("auto_bitrate", "");
-                                values.put("fps", Bitrate.FPS_4K);
+                                values.put("fps", Bitrate.FPS_2K);
 
                                 values.put("server_url", "");
                                 values.put("stream_name", "");
                                 values.put("crypt_text", "");
+                                values.put("audio_sampling_rate", AndroidWebServer.DEFAULT_AUDIO_SAMPLING_RATE);
                                 values.put("no_operation_timeout_minute", AndroidWebServer.TIMEOUT_DEFAULT_MINUTE);
 
                                 long num = dbObject.insert("theta360_setting", null, values);
@@ -887,21 +987,60 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                                 noOperationTimeoutMSec = settingData.getNoOperationTimeoutMinute() * 60 * 1000;
 
                                 // When there is setting
-                                if (settingData != null && !settingData.getServerUrl().isEmpty() && !settingData.getStreamName().isEmpty()) {
+                                if (settingData != null) {
                                     handler.post(new Runnable() {
                                         @Override
                                         public void run() {
                                             // Read and adapt the user's settings.
-                                            etUrl.setText(settingData.getServerUrl() + "/" + settingData.getStreamName());
-                                            ((TextView) findViewById(R.id.txtwidth)).setText(String.valueOf(settingData.getMovieWidth()));
-                                            ((TextView) findViewById(R.id.txtheight)).setText(String.valueOf(settingData.getMovieHeight()));
-                                            ((TextView) findViewById(R.id.txtframe)).setText(String.valueOf((int) settingData.getFps()));
-                                            ((TextView) findViewById(R.id.txtbitrate)).setText(String.valueOf(settingData.getBitRate()));
-                                            ((TextView) findViewById(R.id.textNoOperationTimeoutMinute)).setText(String.valueOf(settingData.getNoOperationTimeoutMinute()));
+                                            etUrl.setText(settingData.getServerUrl());
+                                            streamName.setText(settingData.getStreamName());
+                                            spinnerSelected = true;
+
+                                            if (settingData.getMovieWidth() == 3840 && settingData.getMovieHeight() == 2160) {
+                                                movieSize.setSelection(0);
+                                                setBitrateSpinner(0);
+                                                if (settingData.getBitRate().equals("40")){
+                                                    bitrate.setSelection(0);
+                                                } else if (settingData.getBitRate().equals("20")) {
+                                                    bitrate.setSelection(1);
+                                                } else if (settingData.getBitRate().equals("12")) {
+                                                    bitrate.setSelection(2);
+                                                }
+                                            } else if (settingData.getMovieWidth() == 1920 && settingData.getMovieHeight() == 1080) {
+                                                movieSize.setSelection(1);
+                                                setBitrateSpinner(1);
+                                                if (settingData.getBitRate().equals("16")){
+                                                    bitrate.setSelection(0);
+                                                } else if (settingData.getBitRate().equals("6")) {
+                                                    bitrate.setSelection(1);
+                                                } else if (settingData.getBitRate().equals("3")) {
+                                                    bitrate.setSelection(2);
+                                                }
+                                            } else if (settingData.getMovieWidth() == 1024 && settingData.getMovieHeight() == 576) {
+                                                movieSize.setSelection(2);
+                                                setBitrateSpinner(2);
+                                                if (settingData.getBitRate().equals("2")){
+                                                    bitrate.setSelection(0);
+                                                } else if (settingData.getBitRate().equals("0.85")) {
+                                                    bitrate.setSelection(1);
+                                                } else if (settingData.getBitRate().equals("0.5")) {
+                                                    bitrate.setSelection(2);
+                                                }
+                                            }
+
+                                            if (settingData.getAudioSamplingRate() == 48000) {
+                                                samplingRate.setSelection(0);
+                                            } else if (settingData.getAudioSamplingRate() == 44100) {
+                                                samplingRate.setSelection(1);
+                                            }
                                         }
                                     });
 
-                                    changeReadyLED();
+                                    if (settingData.getStreamName().isEmpty() || settingData.getServerUrl().isEmpty()) {
+                                        changeStartupLED();
+                                    } else {
+                                        changeReadyLED();
+                                    }
                                     settingFix = true;
                                 } else {
                                     changeStartupLED();
@@ -919,6 +1058,7 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                         } finally {
                             cursor.close();
                             dbObject.close();
+                            mRtmpCamera1.stopCamera();
                         }
                     }
                 }
@@ -961,7 +1101,7 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
             try {
                 while (true) {
                     Thread.sleep(CHECK_TIME_SEC * 1000);
-                    if (rtmpExtend.isStreaming()) {
+                    if (mRtmpCamera1.isStreaming()) {
                         double elapsedTime = (System.currentTimeMillis() - startTime) / 1000;
                         long sentByteSize = SequenceNumberStorage.calculateByte();
                         double delaySecond = elapsedTime - sentByteSize / byterate;
@@ -970,6 +1110,7 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                         Timber.i("DelaySecond is " + String.valueOf(delaySecond) + " at DelayJudgment");
 
                         if (delaySecond > DELAY_JUDGEMENT_THRESHOLD) {
+                            // 遅延
                             Timber.i("Live Streaming is Delay");
                             changeDelayStreamingLED();
                         } else {
@@ -990,19 +1131,25 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         ContentValues values = new ContentValues();
         values.put("status", status.getCode());
         dbObject.update("theta360_setting", values, "id=?", new String[]{String.valueOf(PRIMARY_KEY_ID)});
-        if (isZ1()) {
+        if (isZ1Model()) {
+            Map<TextArea, String> textMap = new HashMap<>();
+            textMap.put(TextArea.MIDDLE, getString(R.string.oled_middle));
             switch(status) {
                 case ERROR_CONNECT_SERVER:
-                    notificationOledTextShow(getString(R.string.oled_middle), getString(R.string.oled_bottom_error_connection));
+                    textMap.put(TextArea.BOTTOM, getString(R.string.oled_bottom_error_connection));
+                    notificationOledTextShow(textMap);
                     break;
                 case ERROR_NOT_USER_SETTING:
-                    notificationOledTextShow(getString(R.string.oled_middle), getString(R.string.oled_bottom_error_setting));
+                    textMap.put(TextArea.BOTTOM, getString(R.string.oled_bottom_error_setting));
+                    notificationOledTextShow(textMap);
                     break;
                 case TIMEOUT:
-                    notificationOledTextShow(getString(R.string.oled_middle), getString(R.string.oled_bottom_error_timeout));
+                    textMap.put(TextArea.BOTTOM, getString(R.string.oled_bottom_error_timeout));
+                    notificationOledTextShow(textMap);
                     break;
                 case ERROR_INITIALIZATION:
-                    notificationOledTextShow(getString(R.string.oled_middle), getString(R.string.oled_bottom_error_initialize));
+                    textMap.put(TextArea.BOTTOM, getString(R.string.oled_bottom_error_initialize));
+                    notificationOledTextShow(textMap);
                     break;
             }
         }
@@ -1015,10 +1162,145 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         ContentValues values = new ContentValues();
         values.put("status", String.format("(%s)", errorCode));
         dbObject.update("theta360_setting", values, "id=?", new String[]{String.valueOf(PRIMARY_KEY_ID)});
-        if (isZ1()) {
-            notificationOledTextShow(getString(R.string.oled_middle), getString(R.string.oled_bottom_error_unexpected) + errorCode);
+        if (isZ1Model()) {
+            Map<TextArea, String> textMap = new HashMap<>();
+            textMap.put(TextArea.MIDDLE, getString(R.string.oled_middle));
+            textMap.put(TextArea.BOTTOM, getString(R.string.oled_bottom_error_unexpected) + errorCode);
+            notificationOledTextShow(textMap);
         }
         playPPPSoundWithErrorLED();
     }
+
+    private void setBitrateSpinner (int position) {
+        List<String> items = new ArrayList<>();
+        switch (position) {
+            case 0:
+                items.add(LABELS_BITRATE_4K_40);
+                items.add(LABELS_BITRATE_4K_20);
+                items.add(LABELS_BITRATE_4K_12);
+                break;
+            case 1:
+                items.add(LABELS_BITRATE_2K_16);
+                items.add(LABELS_BITRATE_2K_6);
+                items.add(LABELS_BITRATE_2K_3);
+                break;
+            case 2:
+                items.add(LABELS_BITRATE_1K_2);
+                items.add(LABELS_BITRATE_1K_085);
+                items.add(LABELS_BITRATE_1K_05);
+                break;
+            case 3:
+                items.add(LABELS_BITRATE_06K_1);
+                items.add(LABELS_BITRATE_06K_036);
+                items.add(LABELS_BITRATE_06K_025);
+                break;
+            default:
+                break;
+        }
+        adapter2 = new ArrayAdapter(this, R.layout.spinner_item, items);
+        adapter2.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        bitrate.setAdapter(adapter2);
+        bitrate.setSelection(1);
+    }
+
+    private boolean textInputCheck() {
+        if(etUrl.getText().toString().isEmpty() || streamName.getText().toString().isEmpty()) {
+            status.setTextColor(getColor(R.color.colorStop));
+            status.setText("!");
+            statusText.setText(getResources().getString(R.string.message_error_not_user_setting));
+            updateStatus(StatusType.ERROR_NOT_USER_SETTING);
+            notificationAudioWarning();
+            playPPPSoundWithErrorLED();
+            settingPolling.changeStart();
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    private void setSettingData() {
+        ContentValues values = new ContentValues();
+        settingData.setServerUrl(etUrl.getText().toString());
+        values.put("server_url", etUrl.getText().toString());
+        String cryptText = encodeStreamName(streamName.getText().toString());
+        settingData.setCryptText(cryptText);
+        values.put("crypt_text", cryptText);
+        String streamKey = decodeStreamName(cryptText);
+        settingData.setStreamName(streamKey);
+        values.put("stream_name",streamKey);
+        switch (movieSize.getSelectedItem().toString()) {
+            case LABELS_MOVIE_SIZE_4K:
+                values.put("movie_width", Bitrate.MOVIE_WIDTH_4K);
+                values.put("movie_height", Bitrate.MOVIE_HEIGHT_4K);
+                values.put("fps", Bitrate.FPS_4K);
+                settingData.setMovieWidth(Bitrate.MOVIE_WIDTH_4K);
+                settingData.setMovieHeight(Bitrate.MOVIE_HEIGHT_4K);
+                settingData.setFps(Bitrate.FPS_4K);
+                if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_4K_40)){
+                    values.put("bitrate", Bitrate.BITRATE_4K_40);
+                    settingData.setBitRate(Bitrate.BITRATE_4K_40);
+                } else if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_4K_20)) {
+                    values.put("bitrate", Bitrate.BITRATE_4K_20);
+                    settingData.setBitRate(Bitrate.BITRATE_4K_20);
+                } else if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_4K_12)){
+                    values.put("bitrate", Bitrate.BITRATE_4K_12);
+                    settingData.setBitRate(Bitrate.BITRATE_4K_12);
+                }
+                break;
+            case LABELS_MOVIE_SIZE_2K:
+                values.put("movie_width", Bitrate.MOVIE_WIDTH_2K);
+                values.put("movie_height", Bitrate.MOVIE_HEIGHT_2K);
+                values.put("fps", Bitrate.FPS_2K);
+                settingData.setMovieWidth(Bitrate.MOVIE_WIDTH_2K);
+                settingData.setMovieHeight(Bitrate.MOVIE_HEIGHT_2K);
+                settingData.setFps(Bitrate.FPS_2K);
+                if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_2K_16)){
+                    values.put("bitrate", Bitrate.BITRATE_2K_16);
+                    settingData.setBitRate(Bitrate.BITRATE_2K_16);
+                } else if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_2K_6)) {
+                    values.put("bitrate", Bitrate.BITRATE_2K_6);
+                    settingData.setBitRate(Bitrate.BITRATE_2K_6);
+                } else if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_2K_3)){
+                    values.put("bitrate", Bitrate.BITRATE_2K_3);
+                    settingData.setBitRate(Bitrate.BITRATE_2K_3);
+                }
+                break;
+            case LABELS_MOVIE_SIZE_1K:
+                values.put("movie_width", Bitrate.MOVIE_WIDTH_1K);
+                values.put("movie_height", Bitrate.MOVIE_HEIGHT_1K);
+                values.put("fps", Bitrate.FPS_1K);
+                settingData.setMovieWidth(Bitrate.MOVIE_WIDTH_1K);
+                settingData.setMovieHeight(Bitrate.MOVIE_HEIGHT_1K);
+                settingData.setFps(Bitrate.FPS_1K);
+                if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_1K_2)){
+                    values.put("bitrate", Bitrate.BITRATE_1K_2);
+                    settingData.setBitRate(Bitrate.BITRATE_1K_2);
+                } else if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_1K_085)) {
+                    values.put("bitrate", Bitrate.BITRATE_1K_085);
+                    settingData.setBitRate(Bitrate.BITRATE_1K_085);
+                } else if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_1K_05)){
+                    values.put("bitrate", Bitrate.BITRATE_1K_05);
+                    settingData.setBitRate(Bitrate.BITRATE_1K_05);
+                }
+                break;
+            default:
+                break;
+        }
+
+        if (samplingRate.getSelectedItem().toString().equals(LABELS_SAMPLING_RATE_48000)) {
+            values.put("audio_sampling_rate", 48000);
+            settingData.setAudioSamplingRate(48000);
+        } else if (samplingRate.getSelectedItem().toString().equals(LABELS_SAMPLING_RATE_44100)) {
+            values.put("audio_sampling_rate", 44100);
+            settingData.setAudioSamplingRate(44100);
+        }
+        dbObject.update("theta360_setting", values, "id=?", new String[]{String.valueOf(PRIMARY_KEY_ID)});
+    }
+
+    @Override
+    public void onNewBitrateRtmp(long bitrate){return;}
+
+    @Override
+    public void onConnectionStartedRtmp(String str){return;}
 
 }

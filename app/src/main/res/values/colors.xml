@@ -3,4 +3,14 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
+    <color name="colorStart">#00A7DB</color>
+    <color name="colorStartPress">#7FD3ED</color>
+    <color name="colorStop">#C72830</color>
+    <color name="colorStopPress">#E39397</color>
+    <color name="colorStatus">#00A7DB</color>
+    <color name="colorStatusText">#000000</color>
+    <color name="colorButtonText">#FFFFFF</color>
+    <color name="colorBorder">#000000</color>
+    <color name="colorBackground">#DCDCDC</color>
+    <color name="colorAria">#FFFFFF</color>
 </resources>

@@ -1,5 +1,7 @@
 package com.pedro.encoder.utils.gl;
 
+import android.graphics.Bitmap;
+
 /**
  * Created by pedro on 9/10/17.
  */
@@ -12,9 +14,9 @@ public abstract class StreamObjectBase {
 
   public abstract int updateFrame();
 
-  public abstract void resize(int width, int height);
-
   public abstract void recycle();
 
   public abstract int getNumFrames();
+
+  public abstract Bitmap[] getBitmaps();
 }

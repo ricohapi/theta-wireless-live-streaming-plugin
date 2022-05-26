@@ -19,71 +19,35 @@ package com.theta360.pluginlibrary.activity;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.PackageManager.NameNotFoundException;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.v7.app.AppCompatActivity;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import android.view.KeyEvent;
-import com.theta360.pluginlibrary.UncaughtException;
-import com.theta360.pluginlibrary.UncaughtException.Callback;
+
 import com.theta360.pluginlibrary.callback.KeyCallback;
-import com.theta360.pluginlibrary.receiver.KeyReceiver;
 import com.theta360.pluginlibrary.values.ExitStatus;
 import com.theta360.pluginlibrary.values.LedColor;
 import com.theta360.pluginlibrary.values.LedTarget;
+import com.theta360.pluginlibrary.values.OledDisplay;
+import com.theta360.pluginlibrary.UncaughtException;
+import com.theta360.pluginlibrary.receiver.KeyReceiver;
+import com.theta360.pluginlibrary.values.TextArea;
+import com.theta360.pluginlibrary.values.ThetaModel;
+
+import java.util.Map;
 
 /**
  * PluginActivity
  */
 public abstract class PluginActivity extends AppCompatActivity {
-    private static final String RECEPTOR = "com.theta360.receptor";
-    private static final String MODEL_V = "RICOH THETA V";
-    private static final String MODEL_Z1 = "RICOH THETA Z1";
-
-    private static final String ACTION_MAIN_CAMERA_CLOSE = "com.theta360.plugin.ACTION_MAIN_CAMERA_CLOSE";
-    private static final String ACTION_MAIN_CAMERA_OPEN = "com.theta360.plugin.ACTION_MAIN_CAMERA_OPEN";
-    private static final String ACTION_FINISH_PLUGIN = "com.theta360.plugin.ACTION_FINISH_PLUGIN";
-    private static final String ACTION_ERROR_OCCURED = "com.theta360.plugin.ACTION_ERROR_OCCURED";
-    private static final String PACKAGE_NAME = "packageName";
-    private static final String EXIT_STATUS = "exitStatus";
-    private static final String MESSAGE = "message";
-
-    private static final String ACTION_LED_SHOW = "com.theta360.plugin.ACTION_LED_SHOW";
-    private static final String ACTION_LED_BLINK = "com.theta360.plugin.ACTION_LED_BLINK";
-    private static final String ACTION_LED_HIDE = "com.theta360.plugin.ACTION_LED_HIDE";
-    private static final String TARGET = "target";
-    private static final String COLOR = "color";
-    private static final String PERIOD = "period";
-
-    private static final String ACTION_AUDIO_SHUTTER = "com.theta360.plugin.ACTION_AUDIO_SHUTTER";
-    private static final String ACTION_AUDIO_SH_OPEN = "com.theta360.plugin.ACTION_AUDIO_SH_OPEN";
-    private static final String ACTION_AUDIO_SH_CLOSE = "com.theta360.plugin.ACTION_AUDIO_SH_CLOSE";
-    private static final String ACTION_AUDIO_MOVSTART = "com.theta360.plugin.ACTION_AUDIO_MOVSTART";
-    private static final String ACTION_AUDIO_MOVSTOP = "com.theta360.plugin.ACTION_AUDIO_MOVSTOP";
-    private static final String ACTION_AUDIO_SELF = "com.theta360.plugin.ACTION_AUDIO_SELF";
-    private static final String ACTION_AUDIO_WARNING = "com.theta360.plugin.ACTION_AUDIO_WARNING";
-
-    private static final String ACTION_WLAN_OFF = "com.theta360.plugin.ACTION_WLAN_OFF";
-    private static final String ACTION_WLAN_AP = "com.theta360.plugin.ACTION_WLAN_AP";
-    private static final String ACTION_WLAN_CL = "com.theta360.plugin.ACTION_WLAN_CL";
-
-    private static final String ACTION_DATABASE_UPDATE = "com.theta360.plugin.ACTION_DATABASE_UPDATE";
-    private static final String TARGETS = "targets";
-
-    private static final String ACTION_OLED_IMAGE_BLINK = "com.theta360.plugin.ACTION_OLED_IMAGE_BLINK";
-    private static final String BITMAP = "bitmap";
-    private static final String ACTION_OLED_TEXT_SHOW = "com.theta360.plugin.ACTION_OLED_TEXT_SHOW";
-    private static final String TEXT_MIDDLE = "text-middle";
-    private static final String TEXT_BOTTOM = "text-bottom";
-    private static final String ACTION_OLED_HIDE = "com.theta360.plugin.ACTION_OLED_HIDE";
-
     private boolean isCamera = false;
     private boolean isAutoClose = true;
+    private boolean isClosed = false;
+    private String mUserOption;
+    private boolean isApConnected = false;
+
     private KeyCallback mKeyCallback;
     private KeyReceiver mKeyReceiver;
     private KeyReceiver.Callback onKeyReceiver = new KeyReceiver.Callback() {
@@ -116,13 +80,43 @@ public abstract class PluginActivity extends AppCompatActivity {
         }
     };
 
+    // For X
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        int keyCode = event.getKeyCode();
+        switch(event.getAction()) {
+            case KeyEvent.ACTION_DOWN:
+                if (event.getKeyCode() == KeyReceiver.KEYCODE_MEDIA_RECORD
+                        && event.isLongPress()) {
+                    if (mKeyCallback != null) {
+                        mKeyCallback.onKeyLongPress(keyCode, event);
+                    }
+                } else {
+                    if (mKeyCallback != null) {
+                        if (event.getRepeatCount() == 0) {
+                            mKeyCallback.onKeyDown(keyCode, event);
+                        } else if (event.isLongPress()) {
+                            mKeyCallback.onKeyLongPress(keyCode, event);
+                        }
+                    }
+                }
+                break;
+            case KeyEvent.ACTION_UP:
+                if (mKeyCallback != null) {
+                    mKeyCallback.onKeyUp(keyCode, event);
+                }
+                break;
+        }
+        return super.dispatchKeyEvent(event);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); // Fix to be portrait
         UncaughtException uncaughtException = new UncaughtException(getApplicationContext(),
-                new Callback() {
+                new UncaughtException.Callback() {
                     @Override
                     public void onException(String message) {
                         notificationError(message);
@@ -135,6 +129,12 @@ public abstract class PluginActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
+        Intent intent = getIntent();
+        if (intent != null) {
+            mUserOption = intent.getStringExtra(Constants.USER_OPTION);
+            isApConnected = intent.getBooleanExtra(Constants.IS_AP_CONNECTED, false);
+        }
+
         mKeyReceiver = new KeyReceiver(onKeyReceiver);
         IntentFilter keyFilter = new IntentFilter();
         keyFilter.addAction(KeyReceiver.ACTION_KEY_DOWN);
@@ -144,6 +144,9 @@ public abstract class PluginActivity extends AppCompatActivity {
 
     @Override
     protected void onPause() {
+        if (!isClosed && isAutoClose) {
+            close();
+        }
         unregisterReceiver(mKeyReceiver);
 
         super.onPause();
@@ -166,69 +169,112 @@ public abstract class PluginActivity extends AppCompatActivity {
      * End processing
      */
     public void close() {
+        isClosed = true;
         if (isCamera) {
             notificationCameraOpen();
         }
         notificationSuccess();
     }
 
+    public String getUserOption() {
+        return mUserOption;
+    }
+
+    public boolean isApConnected() {
+        return isApConnected;
+    }
+
     public void notificationCameraOpen() {
         isCamera = false;
-        sendBroadcast(new Intent(ACTION_MAIN_CAMERA_OPEN));
+        sendBroadcast(new Intent(Constants.ACTION_MAIN_CAMERA_OPEN));
     }
 
     public void notificationCameraClose() {
         isCamera = true;
-        sendBroadcast(new Intent(ACTION_MAIN_CAMERA_CLOSE));
+        sendBroadcast(new Intent(Constants.ACTION_MAIN_CAMERA_CLOSE));
     }
 
     /**
      * Sound of normal capture
      */
     public void notificationAudioShutter() {
-        sendBroadcast(new Intent(ACTION_AUDIO_SHUTTER));
+        sendBroadcast(new Intent(Constants.ACTION_AUDIO_SHUTTER));
     }
 
     /**
      * Sound of starting long exposure capture
      */
     public void notificationAudioOpen() {
-        sendBroadcast(new Intent(ACTION_AUDIO_SH_OPEN));
+        if (ThetaModel.isVCameraModel()) {
+            sendBroadcast(new Intent(Constants.ACTION_AUDIO_SH_OPEN));
+        } else {
+            sendBroadcast(new Intent(Constants.ACTION_AUDIO_SHUTTER_OPEN));
+        }
     }
 
     /**
      * Sound of ending long exposure capture
      */
     public void notificationAudioClose() {
-        sendBroadcast(new Intent(ACTION_AUDIO_SH_CLOSE));
+        if (ThetaModel.isVCameraModel()) {
+            sendBroadcast(new Intent(Constants.ACTION_AUDIO_SH_CLOSE));
+        } else {
+            sendBroadcast(new Intent(Constants.ACTION_AUDIO_SHUTTER_CLOSE));
+        }
     }
 
     /**
      * Sound of starting movie recording
      */
     public void notificationAudioMovStart() {
-        sendBroadcast(new Intent(ACTION_AUDIO_MOVSTART));
+        if (ThetaModel.isVCameraModel()) {
+            sendBroadcast(new Intent(Constants.ACTION_AUDIO_MOVSTART));
+        } else {
+            sendBroadcast(new Intent(Constants.ACTION_AUDIO_MOVIE_START));
+        }
     }
 
     /**
      * Sound of stopping movie recording
      */
     public void notificationAudioMovStop() {
-        sendBroadcast(new Intent(ACTION_AUDIO_MOVSTOP));
+        if (ThetaModel.isVCameraModel()) {
+            sendBroadcast(new Intent(Constants.ACTION_AUDIO_MOVSTOP));
+        } else {
+            sendBroadcast(new Intent(Constants.ACTION_AUDIO_MOVIE_STOP));
+        }
     }
 
     /**
      * Sound of working self-timer
      */
     public void notificationAudioSelf() {
-        sendBroadcast(new Intent(ACTION_AUDIO_SELF));
+        sendBroadcast(new Intent(Constants.ACTION_AUDIO_SELF));
     }
 
     /**
      * Sound of warning
      */
     public void notificationAudioWarning() {
-        sendBroadcast(new Intent(ACTION_AUDIO_WARNING));
+        sendBroadcast(new Intent(Constants.ACTION_AUDIO_WARNING));
+    }
+
+    /**
+     * Brightness of display
+     *
+     * @param brightness brightness 0-100(percent)
+     */
+    public void notificationScreenBrightnessSet(@NonNull int brightness) {
+        if (brightness < 0) {
+            brightness = 0;
+        }
+        if (brightness > 100) {
+            brightness = 100;
+        }
+
+        Intent intent = new Intent(Constants.ACTION_SCREEN_BRIGHTNESS_SET);
+        intent.putExtra(Constants.BRIGHTNESS, brightness);
+        sendBroadcast(intent);
     }
 
     /**
@@ -237,9 +283,9 @@ public abstract class PluginActivity extends AppCompatActivity {
      * @param ledColor target LED
      */
     public void notificationLed3Show(@NonNull LedColor ledColor) {
-        Intent intent = new Intent(ACTION_LED_SHOW);
-        intent.putExtra(TARGET, LedTarget.LED3.toString());
-        intent.putExtra(COLOR, ledColor.toString());
+        Intent intent = new Intent(Constants.ACTION_LED_SHOW);
+        intent.putExtra(Constants.TARGET, LedTarget.LED3.toString());
+        intent.putExtra(Constants.COLOR, ledColor.toString());
         sendBroadcast(intent);
     }
 
@@ -252,8 +298,8 @@ public abstract class PluginActivity extends AppCompatActivity {
         if (ledTarget == LedTarget.LED3) {
             notificationLed3Show(LedColor.BLUE);
         } else {
-            Intent intent = new Intent(ACTION_LED_SHOW);
-            intent.putExtra(TARGET, ledTarget.toString());
+            Intent intent = new Intent(Constants.ACTION_LED_SHOW);
+            intent.putExtra(Constants.TARGET, ledTarget.toString());
             sendBroadcast(intent);
         }
     }
@@ -276,10 +322,10 @@ public abstract class PluginActivity extends AppCompatActivity {
             period = 2000;
         }
 
-        Intent intent = new Intent(ACTION_LED_BLINK);
-        intent.putExtra(TARGET, ledTarget.toString());
-        intent.putExtra(COLOR, ledColor.toString());
-        intent.putExtra(PERIOD, period);
+        Intent intent = new Intent(Constants.ACTION_LED_BLINK);
+        intent.putExtra(Constants.TARGET, ledTarget.toString());
+        intent.putExtra(Constants.COLOR, ledColor.toString());
+        intent.putExtra(Constants.PERIOD, period);
         sendBroadcast(intent);
     }
 
@@ -289,78 +335,166 @@ public abstract class PluginActivity extends AppCompatActivity {
      * @param ledTarget target LED
      */
     public void notificationLedHide(@NonNull LedTarget ledTarget) {
-        Intent intent = new Intent(ACTION_LED_HIDE);
-        intent.putExtra(TARGET, ledTarget.toString());
+        Intent intent = new Intent(Constants.ACTION_LED_HIDE);
+        intent.putExtra(Constants.TARGET, ledTarget.toString());
+        sendBroadcast(intent);
+    }
+
+    /**
+     * Set LED or OLED brightness
+     *
+     * @param ledTarget target LED or OLED
+     * @param brightness brightness 0-100 (percent)
+     */
+    public void notificationLedBrightnessSet(@NonNull LedTarget ledTarget, int brightness) {
+        if (brightness < 0) {
+            brightness = 0;
+        }
+        if (brightness > 100) {
+            brightness = 100;
+        }
+
+        Intent intent = new Intent(Constants.ACTION_LED_BRIGHTNESS_SET);
+        intent.putExtra(Constants.TARGET, ledTarget.toString());
+        intent.putExtra(Constants.BRIGHTNESS, brightness);
+        sendBroadcast(intent);
+    }
+
+    /**
+     * Display bitmap on OLED
+     *
+     * @param bitmap Bitmap displayed on OLED (Bitmap size is height 24 or 36 and width 128)
+     */
+    public void notificationOledImageShow(@NonNull Bitmap bitmap) {
+        if ((bitmap.getHeight() == 24 || bitmap.getHeight() == 36)
+                && bitmap.getWidth() == 128) {
+            Intent intent = new Intent(Constants.ACTION_OLED_IMAGE_SHOW);
+            intent.putExtra(Constants.BITMAP, bitmap);
+            sendBroadcast(intent);
+        }
+    }
+
+    /**
+     * Blink bitmap on OLED
+     *
+     * @param bitmap Bitmap displayed on OLED (Bitmap size is height 24 or 36 and width 128)
+     * @param period period 250-2000 (msec)
+     */
+    public void notificationOledImageBlink(@NonNull Bitmap bitmap, int period) {
+        if ((bitmap.getHeight() == 24 || bitmap.getHeight() == 36)
+                && bitmap.getWidth() == 128) {
+            if (period < 250) {
+                period = 250;
+            }
+            if (period > 2000) {
+                period = 2000;
+            }
+
+            Intent intent = new Intent(Constants.ACTION_OLED_IMAGE_BLINK);
+            intent.putExtra(Constants.BITMAP, bitmap);
+            intent.putExtra(Constants.PERIOD, period);
+            sendBroadcast(intent);
+        }
+    }
+
+    /**
+     * Displays a string in the specified area
+     *
+     * @param textMap Specify TextArea for Key and string to be displayed for Value
+     */
+    public void notificationOledTextShow(@NonNull Map<TextArea, String> textMap) {
+        Intent intent = new Intent(Constants.ACTION_OLED_TEXT_SHOW);
+        for (Map.Entry<TextArea, String> map : textMap.entrySet()) {
+            intent.putExtra(map.getKey().toString(), map.getValue());
+        }
+        sendBroadcast(intent);
+    }
+
+    /**
+     * Turn off OLED
+     */
+    public void notificationOledHide() {
+        sendBroadcast(new Intent(Constants.ACTION_OLED_HIDE));
+    }
+
+    /**
+     * Setting the OLED display during plug-in mode
+     *
+     * @param oledDisplay Plug-in display or basic display
+     */
+    public void notificationOledDisplaySet(@NonNull OledDisplay oledDisplay) {
+        Intent intent = new Intent(Constants.ACTION_OLED_DISPLAY_SET);
+        intent.putExtra(Constants.DISPLAY, oledDisplay.toString());
         sendBroadcast(intent);
     }
 
     public void notificationWlanOff() {
-        sendBroadcast(new Intent(ACTION_WLAN_OFF));
+        sendBroadcast(new Intent(Constants.ACTION_WLAN_OFF));
     }
 
     public void notificationWlanAp() {
-        sendBroadcast(new Intent(ACTION_WLAN_AP));
+        sendBroadcast(new Intent(Constants.ACTION_WLAN_AP));
     }
 
     public void notificationWlanCl() {
-        sendBroadcast(new Intent(ACTION_WLAN_CL));
+        sendBroadcast(new Intent(Constants.ACTION_WLAN_CL));
     }
 
+    /**
+     * Updating the Database in X Models
+     */
+    public void notificationDatabaseUpdate(@NonNull String target) {
+        Intent intent = new Intent(Constants.ACTION_DATABASE_UPDATE);
+        intent.putExtra(Constants.TARGETS, target);
+        sendBroadcast(intent);
+    }
+
+    /**
+     * Updating the Database in V/Z1 Models
+     */
     public void notificationDatabaseUpdate(@NonNull String[] targets) {
-        Intent intent = new Intent(ACTION_DATABASE_UPDATE);
-        intent.putExtra(TARGETS, targets);
+        Intent intent = new Intent(Constants.ACTION_DATABASE_UPDATE);
+        intent.putExtra(Constants.TARGETS, targets);
         sendBroadcast(intent);
     }
 
-    public void notificationOledImageBlink(int id, int period) {
-        if (period < 250) {
-            period = 250;
-        }
-        if (period > 2000) {
-            period = 2000;
-        }
-
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inScaled = false;
-        Bitmap bitmap = BitmapFactory
-                .decodeResource(getResources(), id, options);
-
-        notificationOledImageBlink(bitmap, period);
+    /**
+     * Start camera attitude control sensor
+     */
+    public void notificationSensorStart() {
+        sendBroadcast(new Intent(Constants.ACTION_MOTION_SENSOR_START));
     }
 
-    public void notificationOledImageBlink(Bitmap bitmap, int period) {
-        if (period < 250) {
-            period = 250;
-        }
-        if (period > 2000) {
-            period = 2000;
-        }
-
-        Intent intent = new Intent(ACTION_OLED_IMAGE_BLINK);
-        intent.putExtra(BITMAP, bitmap);
-        intent.putExtra(PERIOD, period);
-        sendBroadcast(intent);
+    /**
+     * Stop the camera attitude control sensor
+     */
+    public void notificationSensorStop() {
+        sendBroadcast(new Intent(Constants.ACTION_MOTION_SENSOR_STOP));
     }
 
-    public void notificationOledTextShow(String middle, String bottom) {
-        Intent intent = new Intent(ACTION_OLED_TEXT_SHOW);
-        intent.putExtra(TEXT_MIDDLE, middle);
-        intent.putExtra(TEXT_BOTTOM, bottom);
-        sendBroadcast(intent);
+    /**
+     * Start of camera control by WebApi
+     */
+    public void notificationWebApiCameraOpen() {
+        sendBroadcast(new Intent(Constants.ACTION_PLUGIN_WEBAPI_CAMERA_OPEN));
     }
 
-    public void notificationOledHide() {
-        sendBroadcast(new Intent(ACTION_OLED_HIDE));
+    /**
+     * Stop of camera control by WebApi
+     */
+    public void notificationWebApiCameraClose() {
+        sendBroadcast(new Intent(Constants.ACTION_PLUGIN_WEBAPI_CAMERA_CLOSE));
     }
 
     /**
      * Notifying Completion of Plug-in when the plug-in ends normally
      */
     public void notificationSuccess() {
-        Intent intent = new Intent(ACTION_FINISH_PLUGIN);
-        intent.putExtra(PACKAGE_NAME, getPackageName());
-        intent.putExtra(EXIT_STATUS, ExitStatus.SUCCESS.toString());
+        Intent intent = new Intent(Constants.ACTION_FINISH_PLUGIN);
+        intent.putExtra(Constants.PACKAGE_NAME, getPackageName());
+        intent.putExtra(Constants.EXIT_STATUS, ExitStatus.SUCCESS.toString());
         sendBroadcast(intent);
+
         finishAndRemoveTask();
     }
 
@@ -370,11 +504,12 @@ public abstract class PluginActivity extends AppCompatActivity {
      * @param message error message
      */
     public void notificationError(String message) {
-        Intent intent = new Intent(ACTION_FINISH_PLUGIN);
-        intent.putExtra(PACKAGE_NAME, getPackageName());
-        intent.putExtra(EXIT_STATUS, ExitStatus.FAILURE.toString());
-        intent.putExtra(MESSAGE, message);
+        Intent intent = new Intent(Constants.ACTION_FINISH_PLUGIN);
+        intent.putExtra(Constants.PACKAGE_NAME, getPackageName());
+        intent.putExtra(Constants.EXIT_STATUS, ExitStatus.FAILURE.toString());
+        intent.putExtra(Constants.MESSAGE, message);
         sendBroadcast(intent);
+
         finishAndRemoveTask();
     }
 
@@ -382,28 +517,6 @@ public abstract class PluginActivity extends AppCompatActivity {
      * Notifying Occurrences of Errors
      */
     public void notificationErrorOccured() {
-        sendBroadcast(new Intent(ACTION_ERROR_OCCURED));
-    }
-
-    public boolean isZ1() {
-        if (Build.MODEL.equals(MODEL_Z1)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    public int getReceptorVersion() {
-        try {
-            PackageInfo packageInfo = getPackageManager()
-                    .getPackageInfo(RECEPTOR, PackageManager.GET_META_DATA);
-            if (packageInfo != null) {
-                return packageInfo.versionCode;
-            }
-        } catch (NameNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        return 0;
+        sendBroadcast(new Intent(Constants.ACTION_ERROR_OCCURED));
     }
 }

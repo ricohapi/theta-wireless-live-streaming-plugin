@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 通常時 -->
+    <item android:state_pressed="false" android:state_focused="false">
+        <shape android:shape="rectangle">
+            <corners
+                android:topRightRadius="5dp"
+                android:bottomRightRadius="5dp"
+                android:bottomLeftRadius="5dp"
+                android:topLeftRadius="5dp"
+                />
+            <solid
+                android:color="@color/colorStop"
+                />
+        </shape>
+    </item>
+    <!-- 押下時 -->
+    <item android:state_pressed="true" android:state_focused="false">
+        <shape android:shape="rectangle">
+            <corners
+                android:topRightRadius="5dp"
+                android:bottomRightRadius="5dp"
+                android:bottomLeftRadius="5dp"
+                android:topLeftRadius="5dp"
+                />
+            <solid
+                android:color="@color/colorStopPress"
+                />
+        </shape>
+    </item>
+</selector>

@@ -20,6 +20,7 @@ package com.theta360.cloudstreaming.httpserver;
 import static fi.iki.elonen.NanoHTTPD.Response.Status.NOT_FOUND;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -32,9 +33,11 @@ import android.util.Base64;
 import android.util.Log;
 
 import com.theta360.cloudstreaming.receiver.LiveStreamingReceiver;
-import com.theta360.cloudstreaming.receiver.MeasureBitrateReceiver;
 import com.theta360.cloudstreaming.settingdata.Bitrate;
 import com.theta360.cloudstreaming.settingdata.SettingData;
+import com.theta360.pluginlibrary.activity.ThetaInfo;
+import com.theta360.pluginlibrary.values.ThetaModel;
+
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.NanoHTTPD.Response.Status;
 import java.io.BufferedReader;
@@ -58,7 +61,7 @@ import timber.log.Timber;
 /**
  * Provide web server function
  */
-public class AndroidWebServer {
+public class AndroidWebServer extends Activity {
 
     public static final int PRIMARY_KEY_ID = 1;
 
@@ -73,6 +76,7 @@ public class AndroidWebServer {
     private Boolean requested;
 
     public static final int TIMEOUT_DEFAULT_MINUTE = -1;
+    public static final int DEFAULT_AUDIO_SAMPLING_RATE = 48000;
     private Context con;
 
     private String measuredBitrate;
@@ -112,7 +116,7 @@ public class AndroidWebServer {
         // Update encrypted stream name of DB
         Cursor cursor = dbObject.query("theta360_setting", null, "id=?", new String[]{String.valueOf(PRIMARY_KEY_ID)}, null, null, null, null);
         if (cursor.moveToNext()) {
-            String streamName = cursor.getString(cursor.getColumnIndex("stream_name"));
+            String streamName = prevent_xss(cursor.getString(cursor.getColumnIndex("stream_name")));
             ContentValues values = new ContentValues();
             values.put("crypt_text", encodeStreamName(streamName));
             dbObject.update("theta360_setting", values, "id=?", new String[]{String.valueOf(PRIMARY_KEY_ID)});
@@ -262,8 +266,22 @@ public class AndroidWebServer {
             String uri = session.getUri();
             this.LOG.info(method + " '" + uri + "' ");
 
-            if ("/".equals(uri)) {
-                uri = "index.html";
+            switch (ThetaModel.getValue(ThetaInfo.getThetaModelName())){
+                case THETA_X:
+                    if ("/".equals(uri)) {
+                        uri = "index_x.html";
+                    }
+                    break;
+                case THETA_Z1:
+                    if ("/".equals(uri)) {
+                        uri = "index_z1.html";
+                    }
+                    break;
+                case THETA_V:
+                    if ("/".equals(uri)) {
+                        uri = "index.html";
+                    }
+                    break;
             }
 
             //  In the case of NanoHTTPD, since the POST request is stored in a temporary file, a buffer is given for reading again
@@ -320,7 +338,7 @@ public class AndroidWebServer {
                     values.put("stream_name", decodeStreamName(crypt_text));
                     values.put("crypt_text", crypt_text);
 
-                    values.put("auto_bitrate", parms.get("auto_bitrate"));
+                    values.put("audio_sampling_rate", parms.get("audio_sampling_rate"));
                     values.put("no_operation_timeout_minute", parms.get("no_operation_timeout_minute"));
 
                     long num = dbObject.update("theta360_setting", values, "id=?", new String[]{String.valueOf(PRIMARY_KEY_ID)});
@@ -361,58 +379,17 @@ public class AndroidWebServer {
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
-                return newChunkedResponse(Status.OK, "text/html", destInputStream);
+                Response res=newChunkedResponse(Status.OK, "text/html", destInputStream);
+                res.addHeader("X-XSS-Protection", "1; mode=block");
+                res.addHeader("Content-Security-Policy", "default-src 'self'; frame-ancestors 'self'");
+                res.addHeader("X-Frame-Options", "SAMEORIGIN");
+                res.addHeader("X-Content-Type-Options", "nosniff");
+                return res;
             } else if (uri.equals("/start_streaming")) {
                 // Start and stop streaming
                 Intent intent = new Intent(LiveStreamingReceiver.TOGGLE_LIVE_STREAMING);
                 context.sendBroadcast(intent);
                 return newChunkedResponse(Status.OK, "text/html", null);
-            } else if (uri.equals("/measure_bitrate")) {
-                // Measure bit rate
-                measuredBitrate = null;
-                String serverUrl = parms.get("server-url");
-                String streamName = decodeStreamName(parms.get("stream-name"));
-                String movieType = parms.get("movie-size");
-                int movie_width = 0;
-                int movie_height = 0;
-                if (MovieTypes.Movie4k.getString().equals(movieType)) {
-                    movie_width = Bitrate.MOVIE_WIDTH_4K;
-                    movie_height = Bitrate.MOVIE_HEIGHT_4K;
-                } else if (MovieTypes.Movie2k.getString().equals(movieType)) {
-                    movie_width = Bitrate.MOVIE_WIDTH_2K;
-                    movie_height = Bitrate.MOVIE_HEIGHT_2K;
-                } else if (MovieTypes.Movie1k.getString().equals(movieType)) {
-                    movie_width = Bitrate.MOVIE_WIDTH_1K;
-                    movie_height = Bitrate.MOVIE_HEIGHT_1K;
-                } else {
-                    movie_width = Bitrate.MOVIE_WIDTH_06K;
-                    movie_height = Bitrate.MOVIE_HEIGHT_06K;
-                }
-                Intent intent = new Intent(MeasureBitrateReceiver.MEASURE_BITRATE);
-                intent.putExtra(MeasureBitrateReceiver.KEY_SERVER_URL, serverUrl);
-                intent.putExtra(MeasureBitrateReceiver.KEY_STREAM_NAME, streamName);
-                intent.putExtra(MeasureBitrateReceiver.KEY_WIDTH, movie_width);
-                intent.putExtra(MeasureBitrateReceiver.KEY_HEIGHT, movie_height);
-                context.sendBroadcast(intent);
-                String bitrate = null;
-                // Wait for measurement
-                long start = System.currentTimeMillis();
-                while (System.currentTimeMillis() - start < 15 * 1000) {
-                    if (measuredBitrate != null) {
-                        bitrate = measuredBitrate;
-                        break;
-                    }
-                }
-                if (bitrate == null) {
-                    bitrate = "";
-                }
-                InputStream destInputStream = null;
-                try {
-                    destInputStream = stringToInputStream(bitrate);
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-                return newChunkedResponse(Status.OK, "text/html", destInputStream);
             }
 
             String filename = uri;
@@ -437,9 +414,16 @@ public class AndroidWebServer {
             } else if (uri.endsWith(".svg") || uri.endsWith(".SVG")) {
                 return newChunkedResponse(Status.OK, "image/svg+xml", fis);
             } else if (uri.endsWith(".js")) {
-                return newChunkedResponse(Status.OK, "application/javascript", fis);
+                Response res= newChunkedResponse(Status.OK, "application/javascript", fis);
+                res.addHeader("X-XSS-Protection", "1; mode=block");
+                res.addHeader("Content-Security-Policy", "default-src 'self'; frame-ancestors 'self'");
+                res.addHeader("X-Frame-Options", "SAMEORIGIN");
+                res.addHeader("X-Content-Type-Options", "nosniff");
+                return res;
             } else if (uri.endsWith(".properties")) {
-                return newChunkedResponse(Status.OK, "text/html", fis);
+                Response res= newChunkedResponse(Status.OK, "text/html", fis);
+                res.addHeader("Content-Security-Policy", "default-src 'self'; frame-ancestors 'self'");
+                return res;
             } else if (uri.endsWith(".css")) {
                 return newChunkedResponse(Status.OK, "text/html", fis);
             } else if (uri.endsWith(".html") || uri.endsWith(".htm")) {
@@ -494,7 +478,7 @@ public class AndroidWebServer {
                     JSCode += "\\$('#bitrate06k').val('" + settingData.getBitRate() + "');";
                 }
 
-                JSCode += "\\$('#auto_bitrate').val('" + settingData.getAutoBitRate() + "');";
+                JSCode += "\\$('#audio_sampling_rate_text').val('" + settingData.getAudioSamplingRate() + "');";
 
                 JSCode += "\\$('#no_operation_timeout_minute_text').val('" + settingData.getNoOperationTimeoutMinute() + "');";
 
@@ -510,7 +494,12 @@ public class AndroidWebServer {
                     e.printStackTrace();
                 }
 
-                return newChunkedResponse(Status.OK, "text/html", destInputStream);
+                Response res = newChunkedResponse(Status.OK, "text/html", destInputStream);
+                res.addHeader("X-XSS-Protection", "1; mode=block");
+                res.addHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; frame-ancestors 'self'");
+                res.addHeader("X-Frame-Options", "SAMEORIGIN");
+                res.addHeader("X-Content-Type-Options", "nosniff");
+                return res;
             } else if (uri.endsWith(".json")) {
 
                 // Read data from DB
@@ -527,7 +516,7 @@ public class AndroidWebServer {
 
                 return newChunkedResponse(Status.OK, "application/json", destInputStream);
             } else {
-                return newFixedLengthResponse(NOT_FOUND, "text/plain", uri);
+                return newFixedLengthResponse(NOT_FOUND, "text/plain", "");
             }
         }
 
@@ -541,16 +530,16 @@ public class AndroidWebServer {
             try {
                 settingData = new SettingData();
                 if (cursor.moveToNext()) {
-                    settingData.setServerUrl(cursor.getString(cursor.getColumnIndex("server_url")));
-                    settingData.setStreamName(cursor.getString(cursor.getColumnIndex("stream_name")));
-                    settingData.setCryptText(cursor.getString(cursor.getColumnIndex("crypt_text")));
-                    settingData.setMovieWidth(cursor.getInt(cursor.getColumnIndex("movie_width")));
-                    settingData.setMovieHeight(cursor.getInt(cursor.getColumnIndex("movie_height")));
-                    settingData.setFps(cursor.getDouble(cursor.getColumnIndex("fps")));
-                    settingData.setBitRate(cursor.getString(cursor.getColumnIndex("bitrate")));
-                    settingData.setAutoBitRate(cursor.getString(cursor.getColumnIndex("auto_bitrate")));
-                    settingData.setNoOperationTimeoutMinute(cursor.getInt(cursor.getColumnIndex("no_operation_timeout_minute")));
-                    settingData.setStatus(cursor.getString(cursor.getColumnIndex("status")));
+                    settingData.setServerUrl(prevent_xss(cursor.getString(cursor.getColumnIndex("server_url"))));
+                    settingData.setStreamName(prevent_xss(cursor.getString(cursor.getColumnIndex("stream_name"))));
+                    settingData.setCryptText(prevent_xss(cursor.getString(cursor.getColumnIndex("crypt_text"))));
+                    settingData.setMovieWidth(Integer.parseInt(prevent_xss(cursor.getString(cursor.getColumnIndex("movie_width")))));
+                    settingData.setMovieHeight(Integer.parseInt(prevent_xss(cursor.getString(cursor.getColumnIndex("movie_height")))));
+                    settingData.setFps(Double.parseDouble(prevent_xss(cursor.getString(cursor.getColumnIndex("fps")))));
+                    settingData.setBitRate(prevent_xss(cursor.getString(cursor.getColumnIndex("bitrate"))));
+                    settingData.setAudioSamplingRate(Integer.parseInt(prevent_xss(cursor.getString(cursor.getColumnIndex("audio_sampling_rate")))));
+                    settingData.setNoOperationTimeoutMinute(Integer.parseInt(prevent_xss(cursor.getString(cursor.getColumnIndex("no_operation_timeout_minute")))));
+                    settingData.setStatus(prevent_xss(cursor.getString(cursor.getColumnIndex("status"))));
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -565,4 +554,37 @@ public class AndroidWebServer {
 
     }
 
+    /*
+     * Escape XSS attack
+     */
+    private String prevent_xss(String str){
+        StringBuffer safeStr = new StringBuffer();
+        for(int i=0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            switch (c) {
+                case '&':
+                    safeStr.append("&amp;");
+                    break;
+                case '<':
+                    safeStr.append("&lt;");
+                    break;
+                case '>':
+                    safeStr.append("&gt;");
+                    break;
+                case '\"':
+                    safeStr.append("&quot;");
+                    break;
+                case '\'':
+                    safeStr.append("&#x27;");
+                    break;
+                case ' ':
+                    safeStr.append("&nbsp;");
+                    break;
+                default:
+                    safeStr.append(c);
+                    break;
+            }
+        }
+        return safeStr.toString();
+    }
 }

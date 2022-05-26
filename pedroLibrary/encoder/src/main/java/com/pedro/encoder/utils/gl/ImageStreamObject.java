@@ -2,7 +2,6 @@ package com.pedro.encoder.utils.gl;
 
 import android.graphics.Bitmap;
 import android.util.Log;
-import java.io.IOException;
 
 /**
  * Created by pedro on 23/09/17.
@@ -20,28 +19,23 @@ public class ImageStreamObject extends StreamObjectBase {
 
   @Override
   public int getWidth() {
-    return imageBitmap.getWidth();
+    return imageBitmap != null ? imageBitmap.getWidth() : 0;
   }
 
   @Override
   public int getHeight() {
-    return imageBitmap.getHeight();
+    return imageBitmap != null ? imageBitmap.getHeight() : 0;
   }
 
-  public void load(Bitmap imageBitmap) throws IOException {
+  public void load(Bitmap imageBitmap) {
     this.imageBitmap = imageBitmap;
     numFrames = 1;
     Log.i(TAG, "finish load image");
   }
 
   @Override
-  public void resize(int width, int height) {
-    imageBitmap = Bitmap.createScaledBitmap(imageBitmap, width, height, false);
-  }
-
-  @Override
   public void recycle() {
-    imageBitmap.recycle();
+    if (imageBitmap != null) imageBitmap.recycle();
   }
 
   @Override
@@ -49,8 +43,9 @@ public class ImageStreamObject extends StreamObjectBase {
     return numFrames;
   }
 
-  public Bitmap getImageBitmap() {
-    return imageBitmap;
+  @Override
+  public Bitmap[] getBitmaps() {
+    return new Bitmap[]{imageBitmap};
   }
 
   @Override

@@ -39,6 +39,7 @@ public class SettingData {
     private String bitRate;     // Bit rate
     private String autoBitRate;     // Auto Bit rate
     private int noOperationTimeoutMinute;  // No operation timeout [seconds]
+    private int audioSamplingRate;   // Audio sample Rate[Hz]
 
     // Information
     private String status;  // Status
@@ -56,6 +57,7 @@ public class SettingData {
         this.bitRate = Bitrate.BITRATE_4K_DEFAULT;
         this.autoBitRate = "";
         this.noOperationTimeoutMinute = AndroidWebServer.TIMEOUT_DEFAULT_MINUTE;
+        this.audioSamplingRate = AndroidWebServer.DEFAULT_AUDIO_SAMPLING_RATE;
         this.status = StatusType.RUNNING.getCode();
     }
 
@@ -187,21 +189,21 @@ public class SettingData {
     }
 
     /**
-     * Get AutoBitRate
+     * Get Audio Sampling Rate
      *
-     * @return Auto bit rate
+     * @return Audio Sampling Rate
      */
-    public String getAutoBitRate() {
-        return this.autoBitRate;
+    public int getAudioSamplingRate() {
+        return this.audioSamplingRate;
     }
 
     /**
-     * Set AutoBitRate
+     * Set Audio Sampling Rate
      *
-     * @param autoBitRate Auto bit rate
+     * @param audioSamplingRate  Audio Sampling Rate
      */
-    public void setAutoBitRate(String autoBitRate) {
-        this.autoBitRate = autoBitRate;
+    public void setAudioSamplingRate(int audioSamplingRate) {
+        this.audioSamplingRate = audioSamplingRate;
     }
 
     /**
