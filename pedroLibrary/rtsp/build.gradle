@@ -1,25 +1,42 @@
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'maven-publish'
 
 android {
-  compileSdkVersion Integer.parseInt(project.ANDROID_BUILD_SDK_VERSION)
-  buildToolsVersion project.ANDROID_BUILD_TOOLS_VERSION
+  compileSdkVersion 30
 
   defaultConfig {
-    minSdkVersion Integer.parseInt(project.ANDROID_BUILD_MIN_SDK_VERSION)
-    targetSdkVersion Integer.parseInt(project.ANDROID_BUILD_TARGET_SDK_VERSION)
-    versionCode 129
-    versionName "1.2.9"
+    minSdkVersion 16
+    targetSdkVersion 30
+    versionCode 207
+    versionName "2.0.7"
   }
   buildTypes {
     release {
       minifyEnabled false
-      proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+      consumerProguardFiles 'proguard-rules.pro'
+    }
+  }
+    buildToolsVersion '28.0.3'
+
+    afterEvaluate {
+    publishing {
+      publications {
+        // Creates a Maven publication called "release".
+        release(MavenPublication) {
+          // Applies the component for the release build variant.
+          from components.release
+
+          // You can then customize attributes of the publication as shown below.
+          groupId = "$library_group"
+          artifactId = "rtsp"
+          version = "$versionName"
+        }
+      }
     }
   }
 }
-allprojects {
-  repositories {
-    maven { url 'https://jitpack.io' }
-  }
+
+dependencies {
+  implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 }
-dependencies {}

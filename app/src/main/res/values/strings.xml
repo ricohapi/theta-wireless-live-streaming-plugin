@@ -1,5 +1,6 @@
 <resources>
   <string name="app_name">Wireless Live Streaming</string>
+  <string name="keystore_pass">password</string>
   <string name="oled_middle">Wireless Live Streaming</string>
   <string name="oled_bottom_ready">STREAMING STANDBY</string>
   <string name="oled_bottom_streaming">STREAMING</string>
@@ -8,4 +9,20 @@
   <string name="oled_bottom_error_timeout">CONNECTION TIMEOUT</string>
   <string name="oled_bottom_error_initialize">INITIALIZE FAILED</string>
   <string name="oled_bottom_error_unexpected">AN UNEXPECTED ERROR: </string>
+  <string name="server_url">Server URL</string>
+  <string name="stream_name">Stream name/key</string>
+  <string name="movie_size">Resolution</string>
+  <string name="bitrate">Bit rates</string>
+  <string name="time_out">No-operation timeout[min]</string>
+  <string name="audio_sampling_rate">Audio sample rate</string>
+  <string name="start_live_streaming">Start streaming</string>
+  <string name="stop_live_streaming">Stop streaming</string>
+  <string name="message_running">Streaming standby</string>
+  <string name="message_live_streaming">Streaming</string>
+  <string name="message_stop_streaming">Stop streaming</string>
+  <string name="message_error_connect_server">Connection failed</string>
+  <string name="message_error_not_user_setting">Enter streaming info.</string>
+  <string name="message_time_out">Connection Timeout</string>
+  <string name="message_error_initialization">Initialize failed</string>
+  <string name="message_error_unexpected">An unexpected error</string>
 </resources>

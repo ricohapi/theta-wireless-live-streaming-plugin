@@ -9,8 +9,14 @@
   <uses-permission android:name="android.permission.RECORD_VIDEO_BACKGROUND"/>
   <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
   <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+  <uses-feature android:name="com.theta360.receptor.x"  android:required="true"/>
   <uses-feature android:name="com.theta360.receptor.v" android:required="true" />
   <uses-feature android:name="com.theta360.receptor.z1" android:required="true" />
+  <!--Optional for play store-->
+  <uses-feature android:name="android.hardware.camera" android:required="false" />
+  <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
   <application
     android:allowBackup="true"

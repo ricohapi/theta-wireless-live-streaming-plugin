@@ -2,15 +2,18 @@ package com.pedro.encoder.utils.gl;
 
 import android.content.Context;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.opengl.EGL14;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.os.Build;
-import android.support.annotation.RequiresApi;
 import android.util.Log;
+import androidx.annotation.RequiresApi;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 /**
  * Created by pedro on 9/09/17.
@@ -68,11 +71,11 @@ public class GlUtil {
     return program;
   }
 
-  public static void createTextures(int cantidad, int[] texturesId, int position) {
-    GLES20.glGenTextures(cantidad, texturesId, position);
-    for (int i = 0; i < cantidad; i++) {
-      GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + position + i);
-      GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texturesId[position + i]);
+  public static void createTextures(int quantity, int[] texturesId, int offset) {
+    GLES20.glGenTextures(quantity, texturesId, offset);
+    for (int i = offset; i < quantity; i++) {
+      GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + i);
+      GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texturesId[i]);
       GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
       GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
       GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S,
@@ -82,11 +85,11 @@ public class GlUtil {
     }
   }
 
-  public static void createExternalTextures(int cantidad, int[] texturesId, int position) {
-    GLES20.glGenTextures(cantidad, texturesId, position);
-    for (int i = 0; i < cantidad; i++) {
-      GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + position + i);
-      GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, texturesId[position + i]);
+  public static void createExternalTextures(int quantity, int[] texturesId, int offset) {
+    GLES20.glGenTextures(quantity, texturesId, offset);
+    for (int i = offset; i < quantity; i++) {
+      GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + i);
+      GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, texturesId[i]);
       GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER,
           GLES20.GL_LINEAR);
       GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER,
@@ -118,17 +121,38 @@ public class GlUtil {
   }
 
   public static void checkGlError(String op) {
-    int error;
-    while ((error = GLES20.glGetError()) != GLES20.GL_NO_ERROR) {
-      Log.e(TAG, op + ": glError " + error);
-      throw new RuntimeException(op + ": glError " + error);
+    int error = GLES20.glGetError();
+    if (error != GLES20.GL_NO_ERROR) {
+      throw new RuntimeException(op + ". GL error: " + error);
     }
   }
 
   public static void checkEglError(String msg) {
-    int error;
-    if ((error = EGL14.eglGetError()) != EGL14.EGL_SUCCESS) {
-      throw new RuntimeException(msg + ": EGL error: 0x" + Integer.toHexString(error));
+    int error = EGL14.eglGetError();
+    if (error != EGL14.EGL_SUCCESS) {
+      throw new RuntimeException(msg + ". EGL error: " + error);
     }
+  }
+
+  public static Bitmap getBitmap(int streamWidth, int streamHeight) {
+    //Get opengl buffer
+    ByteBuffer buffer = ByteBuffer.allocateDirect(streamWidth * streamHeight * 4);
+    GLES20.glReadPixels(0, 0, streamWidth, streamHeight, GLES20.GL_RGBA,
+        GLES20.GL_UNSIGNED_BYTE, buffer);
+    //Create bitmap preview resolution
+    Bitmap bitmap = Bitmap.createBitmap(streamWidth, streamHeight, Bitmap.Config.ARGB_8888);
+    //Set buffer to bitmap
+    bitmap.copyPixelsFromBuffer(buffer);
+    //Scale to stream resolution
+    //Flip vertical
+    return flipVerticalBitmap(bitmap, streamWidth, streamHeight);
+  }
+
+  private static Bitmap flipVerticalBitmap(Bitmap bitmap, int width, int height) {
+    float cx = width / 2f;
+    float cy = height / 2f;
+    Matrix matrix = new Matrix();
+    matrix.postScale(1f, -1f, cx, cy);
+    return Bitmap.createBitmap(bitmap, 0, 0, width, height, matrix, true);
   }
 }

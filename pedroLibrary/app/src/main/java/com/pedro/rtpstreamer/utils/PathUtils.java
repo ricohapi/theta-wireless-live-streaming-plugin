@@ -9,6 +9,8 @@ import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 
+import java.io.File;
+
 /**
  * Created by pedro on 21/06/17.
  * Get absolute path from onActivityResult
@@ -16,6 +18,11 @@ import android.provider.MediaStore;
  */
 
 public class PathUtils {
+
+  public static File getRecordPath(Context context) {
+    return new File(context.getExternalFilesDir(null).getAbsolutePath()
+        + "/rtmp-rtsp-stream-client-java");
+  }
 
   public static String getPath(final Context context, final Uri uri) {
 
@@ -84,7 +91,7 @@ public class PathUtils {
     return null;
   }
 
-  public static String getDataColumn(Context context, Uri uri, String selection,
+  private static String getDataColumn(Context context, Uri uri, String selection,
       String[] selectionArgs) {
 
     Cursor cursor = null;
@@ -105,19 +112,19 @@ public class PathUtils {
     return null;
   }
 
-  public static boolean isExternalStorageDocument(Uri uri) {
+  private static boolean isExternalStorageDocument(Uri uri) {
     return "com.android.externalstorage.documents".equals(uri.getAuthority());
   }
 
-  public static boolean isDownloadsDocument(Uri uri) {
+  private static boolean isDownloadsDocument(Uri uri) {
     return "com.android.providers.downloads.documents".equals(uri.getAuthority());
   }
 
-  public static boolean isMediaDocument(Uri uri) {
+  private static boolean isMediaDocument(Uri uri) {
     return "com.android.providers.media.documents".equals(uri.getAuthority());
   }
 
-  public static boolean isGooglePhotosUri(Uri uri) {
+  private static boolean isGooglePhotosUri(Uri uri) {
     return "com.google.android.apps.photos.content".equals(uri.getAuthority());
   }
 }

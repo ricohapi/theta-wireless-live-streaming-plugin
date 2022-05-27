@@ -1,6 +1,7 @@
 <html lang="ja">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval';">
     <title>THETA360 setting</title>
     <script type="text/javascript" src="js/jquery.js"></script>
     <script type="text/javascript" src="js/aes.js"></script>
@@ -24,8 +25,6 @@
         if (screen.width <= 736) {
             window.location.href = "/index_sp.html";
         }
-
-        var measure_bitrate_flag = 0;
 
         $(function(){
           /* Embed multilingual correspondence character string */
@@ -109,34 +108,6 @@
                   $('#bitrate06k').show();
                   $('#bitrate06k').val('0.36');
               }
-              changeAutoBitrate();
-          });
-
-          changeAutoBitrate();
-
-          $("#bitrate_auto_img_box").hover(function() {
-              $("#bitrate_auto_img_1").hide();
-              $("#bitrate_auto_img_2").show();
-          }, function () {
-              $("#bitrate_auto_img_1").show();
-              $("#bitrate_auto_img_2").hide();
-          });
-          $("#bitrate_auto_img_box").on("click", function() {
-              $("#bitrate_auto_img_1").show();
-              $("#bitrate_auto_img_2").hide();
-          });
-
-          $(".select_bitrate").change(function() {
-              changeAutoBitrate();
-          });
-
-          tippy('#bitrate_auto_img_box', {
-              arrow: true,
-              hideOnClick: false,
-              maxWidth: '500px',
-              arrowTransform: 'translateX(9px)',
-              size: 'large',
-              theme: 'light'
           });
         });
 
@@ -161,14 +132,7 @@
             $("#stream_stop_button").hide();
             $(".settings_item_input").prop("disabled", false);
             $(".settings_label").css("opacity", "1");
-            if (getBitrateVal() == "-1") {
-                $("#auto_bitrate_button").prop("disabled", false);
-                if ($("#auto_bitrate").val() != "" && $("#auto_bitrate").val() != "null") {
-                     $("#submit_button").prop("disabled", false);
-                }
-            } else {
-                $("#submit_button").prop("disabled", false);
-            }
+            $("#submit_button").prop("disabled", false);
         }
 
         function changeStatusLive() {
@@ -201,66 +165,13 @@
             }
         }
 
-        function changeAutoBitrate() {
-            if (getBitrateVal() == "-1") {
-                $("#auto_bitrate_button").prop("disabled", false);
-                /* Loading page */
-                if ($("#auto_bitrate").val() != "" && $("#auto_bitrate").val() != "null") {
-                    changeAutoBitrateText();
-                    $("#submit_button").prop("disabled", false);
-                } else {
-                    $("#submit_button").prop("disabled", true);
-                }
-            } else {
-                $("#auto_bitrate_button").prop("disabled", true);
-                $("#submit_button").prop("disabled", false);
-                resetAutoBitrateText();
-            }
-        }
-
-        function measure_bitrate() {
-            if (measure_bitrate_flag == 1) {
-                return;
-            }
-            measure_bitrate_flag = 1;
-            $.ajax({
-                url: '/measure_bitrate',
-                type: 'POST',
-                dataType: 'text',
-                data: {'server-url': $("#server_url_text").val(), 'stream-name': end($("#stream_name_text").val()), 'movie-size': $("#movie").val()},
-                cache: false,
-                timeout: 20000
-            })
-            .done(function(data) {
-                if (data != "" && data != "0") {
-                    $("#auto_bitrate").val(data);
-                    changeAutoBitrateText();
-                }
-            }).always(function() {
-                measure_bitrate_flag = 0;
-            });
-        }
-
-        function changeAutoBitrateText() {
-            var movie = $('#movie').val();
-            var bitrate = $("#auto_bitrate").val();
-            if(movie == 'MOVIE4K'){
-                $('#bitrate4k option[value="-1"]').text("AUTO (" + bitrate + " Mbps)");
-            } else if(movie == 'MOVIE2K'){
-                $('#bitrate2k option[value="-1"]').text("AUTO (" + bitrate + " Mbps)");
-            } else if(movie == 'MOVIE1K'){
-                $('#bitrate1k option[value="-1"]').text("AUTO (" + bitrate + " Mbps)");
-            } else {
-                $('#bitrate06k option[value="-1"]').text("AUTO (" + bitrate + " Mbps)");
-            }
-        }
-
-        function resetAutoBitrateText() {
-            $("#auto_bitrate").val("");
-            $('#bitrate4k option[value="-1"]').text("AUTO");
-            $('#bitrate2k option[value="-1"]').text("AUTO");
-            $('#bitrate1k option[value="-1"]').text("AUTO");
-            $('#bitrate06k option[value="-1"]').text("AUTO");
+        function prevent_xss(string){
+          return string
+              .replace(/\&/g, '&amp;')
+              .replace(/\</g, '&lt;')
+              .replace(/\>/g, '&gt;')
+              .replace(/\"/g, '&quot;')
+              .replace(/\'/g, '&#x27;');
         }
 
     </script>
@@ -297,14 +208,13 @@
               <label class="i18n_SERVER_URL settings_label settings_name_label"></label>
             </p>
             <p id="server_url_input" class="settings_item">
-              <input type='text' id="server_url_text" name='server_url' class="settings_item_input">
+              <input type='text' id="server_url_text" name='server_url' onchange="this.value = prevent_xss(this.value)" class="settings_item_input">
             </p>
-            <p class="height_5" ></p>
             <p class="settings_name">
               <label class="i18n_STREAM_NAME settings_label settings_name_label"></label>
             </p>
             <p id="stream_name_input" class="settings_item">
-              <input type='text' id="stream_name_text" name='stream_name' class="settings_item_input">
+              <input type="text" id="stream_name_text" name='stream_name' onchange="this.value = prevent_xss(this.value)" class="settings_item_input">
             </p>
           </div>
 
@@ -314,54 +224,51 @@
             </p>
             <p class="settings_item">
               <select id="movie" name="movie" class="settings_item_input">
-                <option value="MOVIE4K">4K(3840x1920) 30fps</option>
-                <option value="MOVIE2K">2K(1920x960) 30fps</option>
-                <option value="MOVIE1K">1K(1024x512) 30fps</option>
-                <option value="MOVIE06K">0.6K(640x320) 30fps</option>
+                <option value="MOVIE4K">4K(3840x2160) 30fps</option>
+                <option value="MOVIE2K">2K(1920x1080) 30fps</option>
+                <option value="MOVIE1K">1K(1024x576) 30fps</option>
+                <option value="MOVIE06K">0.6K(640x360) 30fps</option>
               </select>
             </p>
             <p id="bitrate_box" class="settings_name">
               <label class="i18n_BITRATE settings_label settings_name_label"></label>
-              <span id="bitrate_auto_img_box" class="i18n_title_MEASUREMENT_DESCRIPTION">
-                <img id="bitrate_auto_img_1" class="bitrate_auto_img" src="img/06_01.png">
-                <img id="bitrate_auto_img_2" class="bitrate_auto_img" src="img/06_02.png" hidden>
-              </span>
             </p>
             <p class="settings_item">
               <table id="bitrate_table">
                 <tr>
                   <td>
                     <select id="bitrate4k" name="bitrate4k" class="settings_item_input select_bitrate">
-                      <option value="-1">AUTO</option>
                       <option value="40">40Mbps</option>
                       <option value="20">20Mbps</option>
                       <option value="12">12Mbps</option>
                     </select>
                     <select id="bitrate2k" name="bitrate2k" class="settings_item_input select_bitrate">
-                      <option value="-1">AUTO</option>
                       <option value="16">16Mbps</option>
                       <option value="6">6Mbps</option>
                       <option value="3">3Mbps</option>
                     </select>
                     <select id="bitrate1k" name="bitrate1k" class="settings_item_input select_bitrate">
-                      <option value="-1">AUTO</option>
                       <option value="2">2Mbps</option>
                       <option value="0.85">0.85Mbps</option>
                       <option value="0.5">0.5Mbps</option>
                     </select>
                     <select id="bitrate06k" name="bitrate06k" class="settings_item_input select_bitrate">
-                      <option value="-1">AUTO</option>
                       <option value="1">1Mbps</option>
                       <option value="0.36">0.36Mbps</option>
                       <option value="0.25">0.25Mbps</option>
                     </select>
-                    </td>
-                    <td id="bitrate_table_measure_td">
-                      <button id="auto_bitrate_button" onclick="measure_bitrate()" type='button' class="i18n_MEASUREMENT"></button>
-                    </td>
-                  </tr>
+                  </td>
+                </tr>
               </table>
-              <input id="auto_bitrate" name="auto_bitrate" type="hidden">
+            </p>
+            <p class="settings_name">
+                <label class="i18n_AUDIO_SAMPLING_RATE settings_label settings_name_label"></label>
+            </p>
+            <p id="audio_sampling_rate" class="settings_item">
+              <select id="audio_sampling_rate_text" name="audio_sampling_rate" class="settings_item_input">
+                  <option value="44100">44.1KHz</option>
+                  <option value="48000">48.0KHz</option>
+              </select>
             </p>
             <p class="settings_name">
               <label class="i18n_TIMEOUT settings_label settings_name_label"></label>
@@ -392,7 +299,7 @@
 
       <div id="main_right_box" class="unit_box">
         <div id="img_box">
-            <img src="img/02.png" id="theta_img">
+            <img src="img/02_01.png" id="theta_img">
         </div>
 
         <div id="table_box">

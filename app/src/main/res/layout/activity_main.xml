@@ -1,153 +1,154 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-  xmlns:tools="http://schemas.android.com/tools"
-  android:id="@+id/activity_example_rtmp"
-  android:layout_width="match_parent"
-  android:layout_height="match_parent"
-  tools:context=".MainActivity">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_example_rtmp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="@color/colorBackground"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="5dp"
+        android:text="@string/server_url"
+        android:textSize="20dp"
+        android:textColor="@color/colorStatusText"
+        android:focusable="true"
+        android:focusableInTouchMode="true"/>
+
+    <EditText
+        android:id="@+id/et_rtp_url"
+        style="@style/EditTextStyle"
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:paddingLeft="5dp"
+        android:inputType="textUri"/>
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/stream_name"
+        android:textSize="20dp"
+        android:textColor="@color/colorStatusText"/>
+
+    <EditText
+        android:id="@+id/et_stream_key"
+        style="@style/EditTextStyle"
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:paddingLeft="5dp"
+        android:inputType="textUri"/>
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:text="@string/movie_size"
+        android:textSize="20dp"
+        android:textColor="@color/colorStatusText"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:background="@color/colorAria">
+      <Spinner
+          android:id="@+id/txtwidth"
+          android:layout_width="match_parent"
+          android:layout_height="42dp"
+          android:inputType="textPersonName">
+      </Spinner>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/textView6"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/bitrate"
+        android:textSize="20dp"
+        android:textColor="@color/colorStatusText"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:background="@color/colorAria">
+        <Spinner
+            android:id="@+id/txtbitrate"
+            android:layout_width="match_parent"
+            android:layout_height="42dp"
+            android:inputType="textPersonName">
+        </Spinner>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/textView7"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/audio_sampling_rate"
+        android:textSize="20dp"
+        android:textColor="@color/colorStatusText"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:background="@color/colorAria">
+      <Spinner
+          android:id="@+id/textAudioSamplingRate"
+          android:layout_width="match_parent"
+          android:layout_height="42dp"
+          android:inputType="textPersonName">
+      </Spinner>
+    </LinearLayout>
+
+
+  <RelativeLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:gravity="center"
+      android:paddingTop="20dp"
+      android:paddingBottom="20dp"
+      android:layout_marginTop="20dp">
+    <TextView
+        android:id="@+id/live_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="●"
+        android:textSize="20dp"
+        android:textColor="@color/colorStatus"/>
+    <TextView
+        android:id="@+id/status_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@+id/live_status"
+        android:layout_marginLeft="5dp"
+        android:text="@string/message_running"
+        android:textSize="20dp"
+        android:textColor="@color/colorStatusText"/>
+  </RelativeLayout>
+
+  <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content">
+    <Button
+        android:id="@+id/live_button"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:padding="10dp"
+        android:text="@string/start_live_streaming"
+        android:textSize="28dp"
+        android:textColor="@color/colorButtonText"
+        android:background="@drawable/shape_rounded_corners_start"/>
+  </LinearLayout>
 
   <com.pedro.rtplibrary.view.OpenGlView
-    android:id="@+id/surfaceView"
-    android:layout_width="match_parent"
-    android:layout_height="200dp"
-    android:layout_alignParentStart="true"
-    android:layout_below="@+id/textView8"/>
-
-  <EditText
-    android:id="@+id/et_rtp_url"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_alignParentStart="true"
-    android:layout_below="@+id/textView2"
-    android:gravity="center"
-    android:inputType="textUri"/>
-
-  <SurfaceView
-    android:id="@+id/surfaceView2"
-    android:layout_width="10dp"
-    android:layout_height="10dp"
-    android:layout_alignParentBottom="true"
-    android:layout_alignParentStart="true"/>
-
-  <TextView
-    android:id="@+id/textView2"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_alignParentStart="true"
-    android:layout_alignParentTop="true"
-    android:text="1. 接続先URL"/>
-
-  <TextView
-    android:id="@+id/textView3"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_alignParentStart="true"
-    android:layout_below="@+id/textView2"
-    android:layout_marginTop="39dp"
-    android:text="2.解像度横"/>
-
-  <EditText
-    android:id="@+id/txtwidth"
-    android:layout_width="150dp"
-    android:layout_height="wrap_content"
-    android:layout_alignParentStart="true"
-    android:layout_below="@+id/textView3"
-    android:ems="10"
-    android:inputType="textPersonName"/>
-
-  <TextView
-    android:id="@+id/textView4"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_alignTop="@+id/textView3"
-    android:layout_centerHorizontal="true"
-    android:text="3.解像度縦"/>
-
-  <EditText
-    android:id="@+id/txtheight"
-    android:layout_width="150dp"
-    android:layout_height="wrap_content"
-    android:layout_alignBaseline="@+id/txtwidth"
-    android:layout_alignBottom="@+id/txtwidth"
-    android:layout_alignStart="@+id/textView4"
-    android:ems="10"
-    android:inputType="textPersonName"/>
-
-  <TextView
-    android:id="@+id/textView5"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_alignParentStart="true"
-    android:layout_below="@+id/txtwidth"
-    android:text="4.フレームレート"/>
-
-  <EditText
-    android:id="@+id/txtframe"
-    android:layout_width="150dp"
-    android:layout_height="wrap_content"
-    android:layout_alignParentStart="true"
-    android:layout_below="@+id/textView5"
-    android:ems="10"
-    android:inputType="textPersonName"/>
-
-  <TextView
-    android:id="@+id/textView6"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_above="@+id/txtframe"
-    android:layout_alignStart="@+id/txtheight"
-    android:text="5.ビットレート"/>
-
-  <EditText
-    android:id="@+id/txtbitrate"
-    android:layout_width="150dp"
-    android:layout_height="wrap_content"
-    android:layout_alignStart="@+id/textView6"
-    android:layout_below="@+id/textView6"
-    android:ems="10"
-    android:inputType="textPersonName"/>
-
-  <Switch
-    android:id="@+id/swUsePreview"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_below="@+id/textNoOperationTimeoutMinute"
-    android:switchMinWidth="80dp"
-    android:text="7.プレビューでライブ"/>
-
-  <TextView
-    android:id="@+id/textView8"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="12dp"
-    android:layout_alignParentStart="true"
-    android:layout_below="@+id/swUsePreview"
-    android:text="8.撮影キーを押下して開始"/>
-
-  <TextView
-    android:id="@+id/textView9"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_alignBaseline="@+id/txtbitrate"
-    android:layout_alignBottom="@+id/txtbitrate"
-    android:layout_toEndOf="@+id/txtbitrate"
-    android:text="Mbps"/>
-
-  <TextView
-      android:id="@+id/textView"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
+      android:id="@+id/surfaceView"
+      android:layout_width="match_parent"
+      android:layout_height="200dp"
+      android:layout_below="@+id/textView8"
       android:layout_alignParentStart="true"
-      android:layout_below="@+id/txtframe"
-      android:text="無操作タイムアウト分" />
-  <EditText
-    android:id="@+id/textNoOperationTimeoutMinute"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_alignEnd="@+id/textView4"
-    android:layout_alignStart="@+id/txtbitrate"
-    android:layout_below="@+id/txtbitrate"
-    android:ems="10"
-    android:inputType="textPersonName"/>
-
-</RelativeLayout>
+      android:layout_marginStart="-1dp"
+      android:layout_marginTop="200dp" />
+</LinearLayout>
