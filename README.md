@@ -1,10 +1,14 @@
 # Wireless Live Streaming plug-in
 
-Version: 1.2.1
+Version: 1.2.2
 
 Wireless Live Streaming plug-in can stream live 360 movie to RTMP server (e.g. YouTube) directly from RICOH THETA.
 
 ## History
+* Version 1.2.2 (2022/09/06): Following settings are added for THETA X 1.20 or later.
+                              ・4K (3840 x 2160) 15FPS
+                              ・2K (1920 x 1080) 15FPS
+                              ・1K (1024 x 576) 15FPS
 * Version 1.2.1 (2022/05/26): Support THETA X.
 * Version 1.1.4 (2021/11/02): Removed bitrate measurement function.
                               RTMPS is supported.
@@ -14,9 +18,9 @@ Wireless Live Streaming plug-in can stream live 360 movie to RTMP server (e.g. Y
 
 ## Development Environment
 
-* RICOH THETA X  (Version 1.00.2)
-* RICOH THETA Z1 (Version 2.00.1)
-* RICOH THETA V  (Version 3.70.1)
+* RICOH THETA X  (Version 1.20.0)
+* RICOH THETA Z1 (Version 2.10.3)
+* RICOH THETA V  (Version 3.80.2)
 
 Tips : How to update your RICOH THETA firmware:
 > * [THETA X](https://support.theta360.com/en/manual/x/content/update/update_01.html)

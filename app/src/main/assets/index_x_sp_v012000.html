@@ -1,0 +1,1094 @@
+<html lang="ja">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval';">
+    <title>THETA360 setting</title>
+    <script type="text/javascript" src="js/jquery.js"></script>
+    <script type="text/javascript" src="js/aes.js"></script>
+    <script type="text/javascript" src="js/pbkdf2.js"></script>
+    <script type="text/javascript" src="js/encryption.js"></script>
+    <script type="text/javascript" src="js/update.js"></script>
+    <script type="text/javascript" src="js/jquery.i18n.properties.js"></script>
+    <script type="text/javascript" src="js/i18n.js"></script>
+    <script type="text/javascript" src="js/streaming.js"></script>
+    <meta name="viewport" content="width=750">
+    <link rel="stylesheet" type="text/css" href="css/design_sp.css">
+
+  </head>
+
+  <body>
+    <script>
+
+        #JS_INJECTION#
+
+        /* Transition to PC design when the screen size is large */
+        if (screen.width > 736) {
+            window.location.href = "/index_x_v012000.html";
+        }
+
+        $(function(){
+          $('#bitrate4k').hide();
+          $('#bitrate4k_15fps').hide();
+          $('#bitrate2k').hide();
+          $('#bitrate2k_15fps').hide();
+          $('#bitrate1k').hide();
+          $('#bitrate1k_15fps').hide();
+
+          /* Embed multilingual correspondence character string */
+          updateMessage();
+
+          /* Set text from THETA status code */
+          message_code = $("#status_label_tmp").text();
+          if (message_code == "1") {
+              $("#status_label").text(MESSSAGE_RUNNING);
+              changeStatusReady();
+          } else if (message_code == "2") {
+              $("#status_label").text(MESSSAGE_LIVE_STREAMING);
+              changeStatusLive();
+          } else if (message_code == "3") {
+              $("#status_label").text(MESSSAGE_STOP_STREAMING);
+              changeStatusReady();
+          } else if (message_code == "4") {
+              $("#status_label").text(MESSSAGE_ERROR_CONNECT_SERVER);
+              changeStatusError();
+          } else if (message_code == "5") {
+              $("#status_label").text(MESSSAGE_ERROR_NOT_USER_SETTING);
+              changeStatusError();
+          } else if (message_code == "6") {
+              $("#status_label").text(MESSSAGE_TIMEOUT);
+              changeStatusError();
+          } else if (message_code == "7") {
+              $("#status_label").text(MESSSAGE_ERROR_INITIALIZATION);
+              changeStatusError();
+          } else {
+              $("#status_label").text(MESSSAGE_ERROR_UNEXPECTED + data);
+              changeStatusError();
+          }
+
+          /* Initialize encryption key and Initial Vector */
+          initEncryption();
+
+          /* Decoding */
+          var decText = $('#crypt_text').val();
+          $('#stream_name_text').val(dec(decText));
+
+          /* Regularly update status */
+          setInterval("update()", 1000);
+
+          /* Encrypt stream name when sending */
+          $('#form_id').submit(function(){
+              var src = $('#stream_name_text').val();
+              $('#stream_name_text').val(""); /* 平のテキストを消去 */
+
+              var dest = end(src);
+              $('#crypt_text').val(dest);
+
+              return true;
+          });
+
+          /* Changed bit rate options according to picture quality */
+          var bitrate_4k_val = prevent_xss($('#bitrate4k').val());
+          var bitrate_4k_15fps_val = prevent_xss($('#bitrate4k_15fps').val());
+          var bitrate_2k_val = prevent_xss($('#bitrate2k').val());
+          var bitrate_2k_15fps_val = prevent_xss($('#bitrate2k_15fps').val());
+          var bitrate_1k_val = prevent_xss($('#bitrate1k').val());
+          var bitrate_1k_15fps_val = prevent_xss($('#bitrate1k_15fps').val());
+          changeMovieSize();
+          $('#bitrate4k').val(bitrate_4k_val);
+          $('#bitrate4k_15fps').val(bitrate_4k_15fps_val);
+          $('#bitrate2k').val(bitrate_2k_val);
+          $('#bitrate2k_15fps').val(bitrate_2k_15fps_val);
+          $('#bitrate1k').val(bitrate_1k_val);
+          $('#bitrate1k_15fps').val(bitrate_1k_15fps_val);
+
+          var movie = $('#movie').val();
+          var bitrate = "";
+          if(movie == 'MOVIE4K'){
+              bitrate = $('#bitrate4k').val();
+          } else if(movie == 'MOVIE4K_15FPS'){
+              bitrate = $('#bitrate4k_15fps').val();
+          } else if(movie == 'MOVIE2K'){
+              bitrate = $('#bitrate2k').val();
+          } else if(movie == 'MOVIE2K_15FPS'){
+              bitrate = $('#bitrate2k_15fps').val();
+          } else if(movie == 'MOVIE1K'){
+              bitrate = $('#bitrate1k').val();
+          } else {
+              bitrate = $('#bitrate1k_15fps').val();
+          }
+          bitrate = prevent_xss(bitrate);
+
+          changeBitrate();
+          changeAudioSamplingRate();
+          changeTimeout();
+
+          $("#server_url_text").focus(function(){
+              $(this).css("background-color","#d9d9d8");
+              $("#server_url_box").css("background-color","#d9d9d8");
+          }).blur(function(){
+              $(this).css("background-color","#ffffff");
+              $("#server_url_box").css("background-color","#ffffff");
+          });
+          $("#stream_name_text").focus(function(){
+              $(this).css("background-color","#d9d9d8");
+              $("#stream_name_box").css("background-color","#d9d9d8");
+          }).blur(function(){
+              $(this).css("background-color","#ffffff");
+              $("#stream_name_box").css("background-color","#ffffff");
+          });
+          /* Countermeasure to Safari/iOS */
+          $("#submit_button").on("click", function(){
+              $(this).focus();
+          });
+          $("#stream_start_button").on("click", function(){
+              $(this).focus();
+          });
+          $("#stream_stop_button").on("click", function(){
+              $(this).focus();
+          });
+        });
+
+        function changeStatusReady() {
+            document.activeElement.blur();
+            $("#status_img_1").show();
+            $("#status_img_2").hide();
+            $("#status_img_3").hide();
+            $("#stream_start_button").show();
+            $("#stream_stop_button").hide();
+            $(".settings_item_input").prop("disabled", false);
+            $(".settings_item_label").css("opacity", "1");
+            $(".youtube_item_label").css("opacity", "1");
+            $(".change_disabled_background").css("opacity", "1");
+            $("#submit_button").prop("disabled", false);
+            $("#movie_size_tr").on("click", function(){openMovieSize();});
+            $("#bitrate_tr").on("click", function(){openBitrate();});
+            $("#audio_sampling_rate_tr").on("click", function(){openAudioSamplingRate();});
+            $("#timeout_tr").on("click", function(){openTimeout();});
+        }
+
+        function changeStatusLive() {
+            document.activeElement.blur();
+            $("#status_img_1").hide();
+            $("#status_img_2").show();
+            $("#status_img_3").hide();
+            $("#stream_start_button").hide();
+            $("#stream_stop_button").show();
+            $(".settings_item_input").prop("disabled", true);
+            $(".settings_item_label").css("opacity", "0.3");
+            $(".youtube_item_label").css("opacity", "0.3");
+            $(".change_disabled_background").css("opacity", "0.3");
+            $("#submit_button").prop("disabled", true);
+            $("#movie_size_tr").off("click");
+            $("#bitrate_tr").off("click");
+            $("#audio_sampling_rate_tr").off("click");
+            $("#timeout_tr").off("click");
+            $("#measure_bitrate_button").prop("disabled", true);
+        }
+
+        function changeStatusError() {
+            $("#status_img_1").hide();
+            $("#status_img_2").hide();
+            $("#status_img_3").show();
+            $("#stream_start_button").show();
+            $("#stream_stop_button").hide();
+            $(".settings_item_input").prop("disabled", false);
+            $(".settings_item_label").css("opacity", "1");
+            $(".youtube_item_label").css("opacity", "1");
+            $(".change_disabled_background").css("opacity", "1");
+            $("#submit_button").prop("disabled", false);
+            $("#movie_size_tr").on("click", function(){openMovieSize();});
+            $("#bitrate_tr").on("click", function(){openBitrate();});
+            $("#audio_sampling_rate_tr").on("click", function(){openAudioSamplingRate();});
+            $("#timeout_tr").on("click", function(){openTimeout();});
+        }
+
+        function changeMovieSize() {
+            var movie = $("#movie").val();
+            changeMovieSizeCheck($("#movie").val());
+            $("#movie_size_value").text($("#movie option:selected").text());
+            if (movie == 'MOVIE4K') {
+                $('#bitrate4k').val('20');
+                $("#bitrate_value").text($('#bitrate4k option:selected').text());
+                $('#slide_bitrate_4k_table').show();
+                $('#slide_bitrate_4k_15fps_table').hide();
+                $('#slide_bitrate_2k_table').hide();
+                $('#slide_bitrate_2k_15fps_table').hide();
+                $('#slide_bitrate_1k_table').hide();
+                $('#slide_bitrate_1k_15fps_table').hide();
+            } else if (movie == 'MOVIE4K_15FPS') {
+                $('#bitrate4k_15fps').val('10');
+                $("#bitrate_value").text($('#bitrate4k_15fps option:selected').text());
+                $('#slide_bitrate_4k_table').hide();
+                $('#slide_bitrate_4k_15fps_table').show();
+                $('#slide_bitrate_2k_table').hide();
+                $('#slide_bitrate_2k_15fps_table').hide();
+                $('#slide_bitrate_1k_table').hide();
+                $('#slide_bitrate_1k_15fps_table').hide();
+            } else if (movie == 'MOVIE2K') {
+                $('#bitrate2k').val('6');
+                $("#bitrate_value").text($('#bitrate2k option:selected').text());
+                $('#slide_bitrate_4k_table').hide();
+                $('#slide_bitrate_4k_15fps_table').hide();
+                $('#slide_bitrate_2k_table').show();
+                $('#slide_bitrate_2k_15fps_table').hide();
+                $('#slide_bitrate_1k_table').hide();
+                $('#slide_bitrate_1k_15fps_table').hide();
+            } else if (movie == 'MOVIE2K_15FPS') {
+                $('#bitrate2k_15fps').val('3');
+                $("#bitrate_value").text($('#bitrate2k_15fps option:selected').text());
+                $('#slide_bitrate_4k_table').hide();
+                $('#slide_bitrate_4k_15fps_table').hide();
+                $('#slide_bitrate_2k_table').hide();
+                $('#slide_bitrate_2k_15fps_table').show();
+                $('#slide_bitrate_1k_table').hide();
+                $('#slide_bitrate_1k_15fps_table').hide();
+            } else if (movie == 'MOVIE1K') {
+                $('#bitrate1k').val('0.85');
+                $("#bitrate_value").text($('#bitrate1k option:selected').text());
+                $('#slide_bitrate_4k_table').hide();
+                $('#slide_bitrate_4k_15fps_table').hide();
+                $('#slide_bitrate_2k_table').hide();
+                $('#slide_bitrate_2k_15fps_table').hide();
+                $('#slide_bitrate_1k_table').show();
+                $('#slide_bitrate_1k_15fps_table').hide();
+            } else {
+                $('#bitrate1k_15fps').val('0.42');
+                $("#bitrate_value").text($('#bitrate1k_15fps option:selected').text());
+                $('#slide_bitrate_4k_table').hide();
+                $('#slide_bitrate_4k_15fps_table').hide();
+                $('#slide_bitrate_2k_table').hide();
+                $('#slide_bitrate_2k_15fps_table').hide();
+                $('#slide_bitrate_1k_table').hide();
+                $('#slide_bitrate_1k_15fps_table').show();
+            }
+        }
+
+        function changeMovieSizeCheck(movie) {
+            if (movie == 'MOVIE4K') {
+                $('#check_4k').show();
+                $('#check_4k_15fps').hide();
+                $('#check_2k').hide();
+                $('#check_2k_15fps').hide();
+                $('#check_1k').hide();
+                $('#check_1k_15fps').hide();
+            } else if (movie == 'MOVIE4K_15FPS') {
+                $('#check_4k').hide();
+                $('#check_4k_15fps').show();
+                $('#check_2k').hide();
+                $('#check_2k_15fps').hide();
+                $('#check_1k').hide();
+                $('#check_1k_15fps').hide();
+            } else if (movie == 'MOVIE2K') {
+                $('#check_4k').hide();
+                $('#check_4k_15fps').hide();
+                $('#check_2k').show();
+                $('#check_2k_15fps').hide();
+                $('#check_1k').hide();
+                $('#check_1k_15fps').hide();
+            } else if (movie == 'MOVIE2K_15FPS') {
+                $('#check_4k').hide();
+                $('#check_4k_15fps').hide();
+                $('#check_2k').hide();
+                $('#check_2k_15fps').show();
+                $('#check_1k').hide();
+                $('#check_1k_15fps').hide();
+            } else if (movie == 'MOVIE1K') {
+                $('#check_4k').hide();
+                $('#check_4k_15fps').hide();
+                $('#check_2k').hide();
+                $('#check_2k_15fps').hide();
+                $('#check_1k').show();
+                $('#check_1k_15fps').hide();
+            } else {
+                $('#check_4k').hide();
+                $('#check_4k_15fps').hide();
+                $('#check_2k').hide();
+                $('#check_2k_15fps').hide();
+                $('#check_1k').hide();
+                $('#check_1k_15fps').show();
+            }
+        }
+
+        function changeBitrate() {
+            var movie = $("#movie").val();
+            if (movie == 'MOVIE4K') {
+                $("#bitrate_value").text($("#bitrate4k option:selected").text());
+                changeBitrateCheck($('#bitrate4k').val());
+            } else if (movie == 'MOVIE4K_15FPS') {
+                $("#bitrate_value").text($("#bitrate4k_15fps option:selected").text());
+                changeBitrateCheck($('#bitrate4k_15fps').val());
+            } else if (movie == 'MOVIE2K') {
+                $("#bitrate_value").text($("#bitrate2k option:selected").text());
+                changeBitrateCheck($('#bitrate2k').val());
+            } else if (movie == 'MOVIE2K_15FPS') {
+                $("#bitrate_value").text($("#bitrate2k_15fps option:selected").text());
+                changeBitrateCheck($('#bitrate2k_15fps').val());
+            } else if (movie == 'MOVIE1K') {
+                $("#bitrate_value").text($("#bitrate1k option:selected").text());
+                changeBitrateCheck($('#bitrate1k').val());
+            } else {
+                $("#bitrate_value").text($("#bitrate1k_15fps option:selected").text());
+                changeBitrateCheck($('#bitrate1k_15fps').val());
+            }
+        }
+
+        function changeBitrateCheck(val) {
+            var movie = $("#movie").val();
+            if (movie == 'MOVIE4K') {
+                $('#check_bitrate_40_4k').hide();
+                $('#check_bitrate_20_4k').hide();
+                $('#check_bitrate_12_4k').hide();
+                if (val == "-1") {
+                } else if (val == "40") {
+                    $('#check_bitrate_40_4k').show();
+                } else if (val == "20") {
+                    $('#check_bitrate_20_4k').show();
+                } else if (val == "12") {
+                    $('#check_bitrate_12_4k').show();
+                }
+            } else if (movie == 'MOVIE4K_15FPS') {
+                $('#check_bitrate_20_4k_15fps').hide();
+                $('#check_bitrate_10_4k_15fps').hide();
+                $('#check_bitrate_6_4k_15fps').hide();
+                if (val == "-1") {
+                } else if (val == "20") {
+                    $('#check_bitrate_20_4k_15fps').show();
+                } else if (val == "10") {
+                    $('#check_bitrate_10_4k_15fps').show();
+                } else if (val == "6") {
+                    $('#check_bitrate_6_4k_15fps').show();
+                }
+            } else if (movie == 'MOVIE2K') {
+                $('#check_bitrate_16_2k').hide();
+                $('#check_bitrate_6_2k').hide();
+                $('#check_bitrate_3_2k').hide();
+                if (val == "16") {
+                    $('#check_bitrate_16_2k').show();
+                } else if (val == "6") {
+                    $('#check_bitrate_6_2k').show();
+                } else if (val == "3") {
+                    $('#check_bitrate_3_2k').show();
+                }
+            } else if (movie == 'MOVIE2K_15FPS') {
+                $('#check_bitrate_8_2k_15fps').hide();
+                $('#check_bitrate_3_2k_15fps').hide();
+                $('#check_bitrate_1_5_2k_15fps').hide();
+                if (val == "8") {
+                    $('#check_bitrate_8_2k_15fps').show();
+                } else if (val == "3") {
+                    $('#check_bitrate_3_2k_15fps').show();
+                } else if (val == "1.5") {
+                    $('#check_bitrate_1_5_2k_15fps').show();
+                }
+            } else if (movie == 'MOVIE1K') {
+                $('#check_bitrate_2_1k').hide();
+                $('#check_bitrate_085_1k').hide();
+                $('#check_bitrate_05_1k').hide();
+                if (val == "2") {
+                    $('#check_bitrate_2_1k').show();
+                } else if (val == "0.85") {
+                    $('#check_bitrate_085_1k').show();
+                } else if (val == "0.5") {
+                    $('#check_bitrate_05_1k').show();
+                }
+            } else {
+                $('#check_bitrate_1_1k_15fps').hide();
+                $('#check_bitrate_042_1k_15fps').hide();
+                $('#check_bitrate_025_1k_15fps').hide();
+                if (val == "1") {
+                    $('#check_bitrate_1_1k_15fps').show();
+                } else if (val == "0.42") {
+                    $('#check_bitrate_042_1k_15fps').show();
+                } else if (val == "0.25") {
+                    $('#check_bitrate_025_1k_15fps').show();
+                }
+            }
+        }
+
+        function changeAudioSamplingRate() {
+            $("#audio_sampling_rate_value").text($("#audio_sampling_rate_text option:selected").text());
+            changeAudioSamplingRateCheck($('#audio_sampling_rate_text').val());
+        }
+
+         function changeAudioSamplingRateCheck(val) {
+            $('#check_audio_sampling_rate_44100').hide();
+            $('#check_audio_sampling_rate_48000').hide();
+            if (val == "44100") {
+                $('#check_audio_sampling_rate_44100').show();
+            } else if (val == "48000") {
+                $('#check_audio_sampling_rate_48000').show();
+            } else {
+                $('#check_audio_sampling_rate_48000').show();
+            }
+        }
+
+        function changeTimeout() {
+            $("#timeout_value").text($("#no_operation_timeout_minute_text option:selected").text());
+            changeTimeoutCheck($('#no_operation_timeout_minute_text').val());
+        }
+
+        function changeTimeoutCheck(val) {
+            $('#check_timeout_3').hide();
+            $('#check_timeout_5').hide();
+            $('#check_timeout_10').hide();
+            $('#check_timeout_20').hide();
+            $('#check_timeout_auto').hide();
+            if (val == "3") {
+                $('#check_timeout_3').show();
+            } else if (val == "5") {
+                $('#check_timeout_5').show();
+            } else if (val == "10") {
+                $('#check_timeout_10').show();
+            } else if (val == "20") {
+                $('#check_timeout_20').show();
+            } else {
+                $('#check_timeout_auto').show();
+            }
+        }
+
+        function openMovieSize() {
+            $("#tmp_movie").val($("#movie").val());
+            var movie_size = $('#slide_movie_size');
+            movie_size.animate({'left' : 0 }, 300);
+
+        }
+
+        function closeMovieSize() {
+            var movie_size = $('#slide_movie_size');
+            var body = $(document.body);
+            movie_size.animate({'left' : body.outerWidth() }, 300);
+        }
+
+        function selectMovieSize(movie_type) {
+            $("#tmp_movie").val(movie_type);
+            changeMovieSizeCheck($("#tmp_movie").val());
+        }
+
+        function cancelMovieSize() {
+            closeMovieSize();
+            changeMovieSizeCheck($("#movie").val());
+        }
+
+        function decideMovieSize() {
+            if ($("#movie").val() != $("#tmp_movie").val()) {
+                $("#movie").val($("#tmp_movie").val());
+                changeMovieSize();
+                changeBitrate();
+            }
+            closeMovieSize();
+        }
+
+        function openBitrate() {
+            var movie = $("#movie").val();
+            if (movie == 'MOVIE4K') {
+                $("#tmp_bitrate").val($("#bitrate4k").val());
+            } else if (movie == 'MOVIE4K_15FPS') {
+                $("#tmp_bitrate").val($("#bitrate4k_15fps").val());
+            } else if (movie == 'MOVIE2K') {
+                $("#tmp_bitrate").val($("#bitrate2k").val());
+            } else if (movie == 'MOVIE2K_15FPS') {
+                $("#tmp_bitrate").val($("#bitrate2k_15fps").val());
+            } else if (movie == 'MOVIE1K') {
+                $("#tmp_bitrate").val($("#bitrate1k").val());
+            } else {
+                $("#tmp_bitrate").val($("#bitrate1k_15fps").val());
+            }
+            selectBitrate($("#tmp_bitrate").val());
+
+            var bitrate = $('#slide_bitrate');
+            bitrate.animate({'left' : 0 }, 300);
+        }
+
+        function closeBitrate() {
+            var bitrate = $('#slide_bitrate');
+            var body = $(document.body);
+            bitrate.animate({'left' : body.outerWidth() }, 300);
+        }
+
+        function selectBitrate(bitrate) {
+            bitrate = prevent_xss(bitrate);
+            $("#tmp_bitrate").val(bitrate);
+            changeBitrateCheck(bitrate);
+            $("#slide_bitrate_ok").prop("disabled", false);
+        }
+
+        function cancelBitrate() {
+            closeBitrate();
+            var movie = $("#movie").val();
+            if (movie == 'MOVIE4K') {
+                changeBitrateCheck($('#bitrate4k').val());
+            } else if (movie == 'MOVIE4K_15FPS') {
+                changeBitrateCheck($('#bitrate4k_15fps').val());
+            } else if (movie == 'MOVIE2K') {
+                changeBitrateCheck($('#bitrate2k').val());
+            } else if (movie == 'MOVIE2K_15FPS') {
+                changeBitrateCheck($('#bitrate2k_15fps').val());
+            } else if (movie == 'MOVIE1K') {
+                changeBitrateCheck($('#bitrate1k').val());
+            } else {
+                changeBitrateCheck($('#bitrate1k_15fps').val());
+            }
+        }
+
+        function decideBitrate() {
+            var bitrate = prevent_xss($("#tmp_bitrate").val());
+            var movie = $("#movie").val();
+            if (movie == 'MOVIE4K') {
+                $("#bitrate4k").val(bitrate);
+            } else if (movie == 'MOVIE4K_15FPS') {
+                $("#bitrate4k_15fps").val(bitrate);
+            } else if (movie == 'MOVIE2K') {
+                $("#bitrate2k").val(bitrate);
+            } else if (movie == 'MOVIE2K_15FPS') {
+                $("#bitrate2k_15fps").val(bitrate);
+            } else if (movie == 'MOVIE1K') {
+                $("#bitrate1k").val(bitrate);
+            } else {
+                $("#bitrate1k_15fps").val(bitrate);
+            }
+            changeBitrate();
+            closeBitrate();
+        }
+
+        function openAudioSamplingRate() {
+            var audio_sampling_rate = $('#slide_audio_sampling_rate');
+            audio_sampling_rate.animate({'left' : 0 }, 300);
+            $("#tmp_audio_sampling_rate").val($("#audio_sampling_rate_text").val());
+        }
+
+        function closeAudioSamplingRate() {
+            var audio_sampling_rate = $('#slide_audio_sampling_rate');
+            var body = $(document.body);
+            audio_sampling_rate.animate({'left' : body.outerWidth() }, 300);
+        }
+
+        function selectAudioSamplingRate(audio_sampling_rate) {
+            $("#tmp_audio_sampling_rate").val(audio_sampling_rate);
+            changeAudioSamplingRateCheck(audio_sampling_rate);
+        }
+
+        function cancelAudioSamplingRate() {
+            closeAudioSamplingRate();
+            changeAudioSamplingRateCheck($("#audio_sampling_rate_text").val());
+        }
+
+        function decideAudioSamplingRate() {
+            $("#audio_sampling_rate_text").val($("#tmp_audio_sampling_rate").val());
+            changeAudioSamplingRate();
+            closeAudioSamplingRate();
+        }
+
+        function openTimeout() {
+            var timeout = $('#slide_timeout');
+            timeout.animate({'left' : 0 }, 300);
+            $("#tmp_timeout").val($("#no_operation_timeout_minute_text").val());
+        }
+
+        function closeTimeout() {
+            var timeout = $('#slide_timeout');
+            var body = $(document.body);
+            timeout.animate({'left' : body.outerWidth() }, 300);
+        }
+
+        function selectTimeout(timeout) {
+            $("#tmp_timeout").val(timeout);
+            changeTimeoutCheck(timeout);
+        }
+
+        function cancelTimeout() {
+            closeTimeout();
+            changeTimeoutCheck($("#no_operation_timeout_minute_text").val());
+        }
+
+        function decideTimeout() {
+            $("#no_operation_timeout_minute_text").val($("#tmp_timeout").val());
+            changeTimeout();
+            closeTimeout();
+        }
+
+        function prevent_xss(string){
+          return string
+              .replace(/\&/g, '&amp;')
+              .replace(/\</g, '&lt;')
+              .replace(/\>/g, '&gt;')
+              .replace(/\"/g, '&quot;')
+              .replace(/\'/g, '&#x27;');
+        }
+
+    </script>
+
+    <form action='/index_x_sp_v012000.html' method='post' id="form_id">
+      <div id="head_box">
+        <div id="status_box">
+          <img id="status_img_1" class="status_img" src="img/100_01.png">
+          <img id="status_img_2" class="status_img" src="img/100_02.png" hidden>
+          <img id="status_img_3" class="status_img" src="img/100_03.png" hidden>
+          <label id="status_label"></label>
+          <label id="status_label_tmp" hidden></label>
+        </div>
+
+        <div id="description">
+          <label id="description_label" class="i18n_DESCRIPTION"></label>
+        </div>
+
+        <div id="stream_button_box">
+          <button id="stream_start_button" type='button' onclick="streaming()" class="i18n_START_LIVE_STREAMING stream_button"></button>
+          <button id="stream_stop_button" type='button' onclick="streaming()" class="i18n_STOP_LIVE_STREAMING stream_button" hidden></button>
+        </div>
+      </div>
+
+      <div id="youtube_box" class="change_disabled_background">
+        <div id="server_url_box" class="bottom_border">
+          <div class="youtube_padding">
+            <label id="server_url_label" class="i18n_SERVER_URL youtube_item_label"></label>
+            <input type='text' id="server_url_text" name='server_url' onchange="this.value = prevent_xss(this.value)" class="i18n_placeholder_INPUT_PLACEHOLDER settings_item_input">
+          </div>
+        </div>
+
+        <div id="stream_name_box">
+          <div class="youtube_padding">
+            <label id="stream_name_label" class="i18n_STREAM_NAME youtube_item_label"></label>
+            <input type='text' id="stream_name_text" name='stream_name' onchange="this.value = prevent_xss(this.value)" class="i18n_placeholder_INPUT_PLACEHOLDER settings_item_input">
+          </div>
+        </div>
+      </div>
+
+      <div id="advanced_box">
+        <label id="advanced_label" class="i18n_ADVANCED_SETTING"></label>
+      </div>
+
+      <div id="settings_box" class="change_disabled_background">
+        <table id="settings_movie_table" class="settings_table bottom_border">
+          <tr id="movie_size_tr">
+            <td id="movie_table_head_1">
+              <label id="movie_size_label" class="i18n_MOVIE_SIZE settings_item_label"></label>
+            </td>
+            <td id="movie_table_head_2">
+              <label id="movie_size_value" class="settings_value"></label>
+            </td>
+            <td id="movie_table_head_3">
+              <img src="img/102.png" class="arrow_icon">
+            </td>
+          </tr>
+        </table>
+        <table id="settings_bitrate_table" class="settings_table bottom_border">
+          <tr id="bitrate_tr">
+            <td id="bitrate_table_head_1">
+              <label id="bitrate_label" class="i18n_BITRATE settings_item_label"></label>
+            </td>
+            <td id="bitrate_table_head_2">
+              <label id="bitrate_value" class="settings_value"></label>
+            </td>
+            <td id="bitrate_table_head_3">
+              <img src="img/102.png" class="arrow_icon">
+            </td>
+          </tr>
+        </table>
+        <table id="settings_audio_sampling_rate_table" class="settings_table bottom_border">
+          <tr id="audio_sampling_rate_tr">
+            <td id="audio_sampling_rate_table_head_1">
+              <label id="audio_sampling_rate_label" class="i18n_AUDIO_SAMPLING_RATE settings_item_label"></label>
+            </td>
+            <td id="audio_sampling_rate_table_head_2">
+              <label id="audio_sampling_rate_value" class="settings_value">48.0KHz</label>
+            </td>
+            <td id="audio_sampling_rate_table_head_3">
+              <img src="img/102.png" class="arrow_icon">
+            </td>
+          </tr>
+        </table>
+        <table id="settings_timeout_table" class="settings_table">
+          <tr id="timeout_tr">
+            <td id="timeout_table_head_1">
+              <label id="timeout_label" class="i18n_TIMEOUT settings_item_label"></label>
+            </td>
+            <td id="timeout_table_head_2">
+              <label id="timeout_value" class="settings_value">10秒</label>
+            </td>
+            <td id="timeout_table_head_3">
+              <img src="img/102.png" class="arrow_icon">
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <div id="submit_button_box" class="change_disabled_background">
+        <button id="submit_button" type='submit' name='action' value='send' class="i18n_SEND_BUTTON change_disabled_background"></button>
+      </div>
+
+      <input type="hidden" name="update" value="1">
+      <input type="hidden" name="crypt" value="0" id="crypt_text">
+      <span type="hidden" id="encryption_key"></span>
+      <span type="hidden" id="encryption_iv"></span>
+
+      <select id="movie" name="movie" hidden>
+        <option value="MOVIE4K">4K(3840x2160) 30fps</option>
+        <option value="MOVIE4K_15FPS">4K(3840x2160) 15fps</option>
+        <option value="MOVIE2K">2K(1920x1080) 30fps</option>
+        <option value="MOVIE2K_15FPS">2K(1920x1080) 15fps</option>
+        <option value="MOVIE1K">1K(1024x576) 30fps</option>
+        <option value="MOVIE1K_15FPS">1K(1024x576) 15fps</option>
+      </select>
+      <select id="bitrate4k" name="bitrate4k">
+        <option value="40">40Mbps</option>
+        <option value="20">20Mbps</option>
+        <option value="12">12Mbps</option>
+      </select>
+      <select id="bitrate4k_15fps" name="bitrate4k_15fps">
+        <option value="20">20Mbps</option>
+        <option value="10">10Mbps</option>
+        <option value="6">6Mbps</option>
+      </select>
+      <select id="bitrate2k" name="bitrate2k">
+        <option value="16">16Mbps</option>
+        <option value="6">6Mbps</option>
+        <option value="3">3Mbps</option>
+      </select>
+      <select id="bitrate2k_15fps" name="bitrate2k_15fps">
+        <option value="8">8Mbps</option>
+        <option value="3">3Mbps</option>
+        <option value="1.5">1.5Mbps</option>
+      </select>
+      <select id="bitrate1k" name="bitrate1k">
+        <option value="2">2Mbps</option>
+        <option value="0.85">0.85Mbps</option>
+        <option value="0.5">0.5Mbps</option>
+      </select>
+      <select id="bitrate1k_15fps" name="bitrate1k_15fps">
+        <option value="1">1Mbps</option>
+        <option value="0.42">0.42Mbps</option>
+        <option value="0.25">0.25Mbps</option>
+      </select>
+      <select id="audio_sampling_rate_text" name="audio_sampling_rate" hidden>
+        <option value="44100">44.1KHz</option>
+        <option value="48000">48.0KHz</option>
+      </select>
+      <select id="no_operation_timeout_minute_text" name="no_operation_timeout_minute" hidden>
+        <option value="3" class="i18n_add_MINUTE">3</option>
+        <option value="5" class="i18n_add_MINUTE">5</option>
+        <option value="10" class="i18n_add_MINUTE">10</option>
+        <option value="20" class="i18n_add_MINUTE">20</option>
+        <option value="-1" class="i18n_DISABLED"></option>
+      </select>
+
+      <nav id="slide_movie_size" class="slide_menu">
+        <div id="slide_movie_label_box" class="slide_head_box">
+          <button id="slide_movie_cancel" type='button' onclick="cancelMovieSize()" class="slide_head_button slide_cancel_button">Cancel</button>
+          <label id="slide_movie_label" class="i18n_MOVIE_SIZE slide_head_label"></label>
+          <button id="slide_movie_ok" type='button' onclick="decideMovieSize()" class="slide_head_button slide_ok_button">OK</button>
+        </div>
+        <div id="slide_movie_size_box" class="slide_item_box">
+          <table id="slide_movie_size_table" class="settings_table">
+            <tr class="bottom_border" onclick="selectMovieSize('MOVIE4K')">
+              <td id="slide_movie_size_table_head_1">
+                <label id="movie_size_4k" class="settings_item_label">4K(3840x2160) 30fps</label>
+              </td>
+              <td class="slide_check">
+                <img id="check_4k" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr class="bottom_border" onclick="selectMovieSize('MOVIE4K_15FPS')">
+              <td>
+                <label id="movie_size_4k_15fps" class="settings_item_label">4K(3840x2160) 15fps</label>
+              </td>
+              <td class="slide_check">
+                <img id="check_4k_15fps" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr class="bottom_border" onclick="selectMovieSize('MOVIE2K')">
+              <td>
+                <label id="movie_size_2k" class="settings_item_label">2K(1920x1080) 30fps</label>
+              </td>
+              <td>
+                <img id="check_2k" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr class="bottom_border" onclick="selectMovieSize('MOVIE2K_15FPS')">
+              <td>
+                <label id="movie_size_2k_15fps" class="settings_item_label">2K(1920x1080) 15fps</label>
+              </td>
+              <td>
+                <img id="check_2k_15fps" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr class="bottom_border" onclick="selectMovieSize('MOVIE1K')">
+              <td>
+                <label id="movie_size_1k" class="settings_item_label">1K(1024x576) 30fps</label>
+              </td>
+              <td>
+                <img id="check_1k" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr class="bottom_border" onclick="selectMovieSize('MOVIE1K_15FPS')">
+              <td>
+                <label id="movie_size_1k_15fps" class="settings_item_label">1K(1024x576) 15fps</label>
+              </td>
+              <td>
+                <img id="check_1k_15fps" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+          </table>
+        </div>
+        <input type="hidden" id="tmp_movie">
+      </nav>
+
+      <nav id="slide_bitrate" class="slide_menu">
+        <div id="slide_bitrate_label_box" class="slide_head_box">
+          <button id="slide_bitrate_cancel" type='button' onclick="cancelBitrate()" class="slide_head_button slide_cancel_button">Cancel</button>
+          <label id="slide_bitrate_label" class="i18n_BITRATE slide_head_label"></label>
+          <button id="slide_bitrate_ok" type='button' onclick="decideBitrate()" class="slide_head_button slide_ok_button">OK</button>
+        </div>
+        <div id="slide_bitrate_box" class="slide_item_box">
+          <table id="slide_bitrate_4k_table" class="settings_table">
+            <tr class="bottom_border" onclick="selectBitrate('40')">
+              <td class="slide_bitrate_table_head">
+                <label id="bitrate_40_4k" class="settings_item_label">40Mbps</label>
+              </td>
+              <td class="slide_check">
+                <img id="check_bitrate_40_4k" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr class="bottom_border" onclick="selectBitrate('20')">
+              <td>
+                <label id="bitrate_20_4k" class="settings_item_label">20Mbps</label>
+              </td>
+              <td>
+                <img id="check_bitrate_20_4k" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr onclick="selectBitrate('12')">
+              <td>
+                <label id="bitrate_12_4k" class="settings_item_label">12Mbps</label>
+              </td>
+              <td>
+                <img id="check_bitrate_12_4k" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+          </table>
+
+          <table id="slide_bitrate_4k_15fps_table" class="settings_table">
+            <tr class="bottom_border" onclick="selectBitrate('20')">
+              <td class="slide_bitrate_table_head">
+                <label id="bitrate_20_4k_15fps" class="settings_item_label">20Mbps</label>
+              </td>
+              <td class="slide_check">
+                <img id="check_bitrate_20_4k_15fps" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr class="bottom_border" onclick="selectBitrate('10')">
+              <td>
+                <label id="bitrate_10_4k_15fps" class="settings_item_label">10Mbps</label>
+              </td>
+              <td>
+                <img id="check_bitrate_10_4k_15fps" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr onclick="selectBitrate('6')">
+              <td>
+                <label id="bitrate_6_4k_15fps" class="settings_item_label">6Mbps</label>
+              </td>
+              <td>
+                <img id="check_bitrate_6_4k_15fps" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+          </table>
+
+          <table id="slide_bitrate_2k_table" class="settings_table">
+            <tr class="bottom_border" onclick="selectBitrate('16')">
+              <td class="slide_bitrate_table_head">
+                <label id="bitrate_16_2k" class="settings_item_label">16Mbps</label>
+              </td>
+              <td class="slide_check">
+                <img id="check_bitrate_16_2k" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr class="bottom_border" onclick="selectBitrate('6')">
+              <td>
+                <label id="bitrate_6_2k" class="settings_item_label">6Mbps</label>
+              </td>
+              <td>
+                <img id="check_bitrate_6_2k" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr onclick="selectBitrate('3')">
+              <td>
+                <label id="bitrate_3_2k" class="settings_item_label">3Mbps</label>
+              </td>
+              <td>
+                <img id="check_bitrate_3_2k" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+          </table>
+
+          <table id="slide_bitrate_2k_15fps_table" class="settings_table">
+            <tr class="bottom_border" onclick="selectBitrate('8')">
+              <td class="slide_bitrate_table_head">
+                <label id="bitrate_8_2k_15fps" class="settings_item_label">8Mbps</label>
+              </td>
+              <td class="slide_check">
+                <img id="check_bitrate_8_2k_15fps" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr class="bottom_border" onclick="selectBitrate('3')">
+              <td>
+                <label id="bitrate_3_2k_15fps" class="settings_item_label">6Mbps</label>
+              </td>
+              <td>
+                <img id="check_bitrate_3_2k_15fps" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr onclick="selectBitrate('1.5')">
+              <td>
+                <label id="bitrate_1_5_2k_15fps" class="settings_item_label">1.5Mbps</label>
+              </td>
+              <td>
+                <img id="check_bitrate_1_5_2k_15fps" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+          </table>
+
+          <table id="slide_bitrate_1k_table" class="settings_table">
+            <tr class="bottom_border" onclick="selectBitrate('2')">
+              <td class="slide_bitrate_table_head">
+                <label id="bitrate_2_1k" class="settings_item_label">2Mbps</label>
+              </td>
+              <td class="slide_check">
+                <img id="check_bitrate_2_1k" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr class="bottom_border" onclick="selectBitrate('0.85')">
+              <td>
+                <label id="bitrate_085_1k" class="settings_item_label">0.85Mbps</label>
+              </td>
+              <td>
+                <img id="check_bitrate_085_1k" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr onclick="selectBitrate('0.5')">
+              <td>
+                <label id="bitrate_05_1k" class="settings_item_label">0.5Mbps</label>
+              </td>
+              <td>
+                <img id="check_bitrate_05_1k" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+          </table>
+
+          <table id="slide_bitrate_1k_15fps_table" class="settings_table">
+            <tr class="bottom_border" onclick="selectBitrate('1')">
+              <td class="slide_bitrate_table_head">
+                <label id="bitrate_1_1k_15fps" class="settings_item_label">1Mbps</label>
+              </td>
+              <td class="slide_check">
+                <img id="check_bitrate_1_1k_15fps" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr class="bottom_border" onclick="selectBitrate('0.42')">
+              <td>
+                <label id="bitrate_042_1k_15fps" class="settings_item_label">0.42Mbps</label>
+              </td>
+              <td>
+                <img id="check_bitrate_042_1k_15fps" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr onclick="selectBitrate('0.25')">
+              <td>
+                <label id="bitrate_025_1k_15fps" class="settings_item_label">0.25Mbps</label>
+              </td>
+              <td>
+                <img id="check_bitrate_025_1k_15fps" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+          </table>
+
+        </div>
+
+        <input type="hidden" id="tmp_bitrate">
+      </nav>
+      <nav id="slide_audio_sampling_rate" class="slide_menu">
+        <div id="slide_audio_sampling_rate_label_box" class="slide_head_box">
+          <button id="slide_audio_sampling_rate_cancel" type='button' onclick="cancelAudioSamplingRate()" class="slide_head_button slide_cancel_button">Cancel</button>
+          <label id="slide_audio_sampling_rate_label" class="i18n_AUDIO_SAMPLING_RATE slide_head_label"></label>
+          <button id="slide_audio_sampling_rate_ok" type='button' onclick="decideAudioSamplingRate()" class="slide_head_button slide_ok_button">OK</button>
+        </div>
+        <div id="slide_audio_sampling_rate_box" class="slide_item_box">
+          <table id="slide_audio_sampling_rate_table" class="settings_table">
+            <tr class="bottom_border" onclick="selectAudioSamplingRate('44100')">
+              <td id="slide_audio_sampling_rate_table_head_1">
+                <label id="slide_audio_sampling_rate_44100" class="settings_item_label">44.1KHz</label>
+              </td>
+              <td class="slide_check">
+                <img id="check_audio_sampling_rate_44100" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr class="bottom_border" onclick="selectAudioSamplingRate('48000')">
+              <td>
+                <label id="slide_audio_sampling_rate_48000" class="settings_item_label">48.0KHz</label>
+              </td>
+              <td>
+                <img id="check_audio_sampling_rate_48000" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+          </table>
+          <input type="hidden" id="tmp_audio_sampling_rate">
+        </div>
+
+      </nav>
+
+      <nav id="slide_timeout" class="slide_menu">
+        <div id="slide_timeout_label_box" class="slide_head_box">
+          <button id="slide_timeout_cancel" type='button' onclick="cancelTimeout()" class="slide_head_button slide_cancel_button">Cancel</button>
+          <label id="slide_timeout_label" class="i18n_TIMEOUT slide_head_label"></label>
+          <button id="slide_timeout_ok" type='button' onclick="decideTimeout()" class="slide_head_button slide_ok_button">OK</button>
+        </div>
+        <div id="slide_timeout_box" class="slide_item_box">
+          <table id="slide_timeout_table" class="settings_table">
+            <tr class="bottom_border" onclick="selectTimeout('3')">
+              <td id="slide_timeout_table_head_1">
+                <label id="slide_timeout_3" class="settings_item_label i18n_add_MINUTE">3</label>
+              </td>
+              <td class="slide_check">
+                <img id="check_timeout_3" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr class="bottom_border" onclick="selectTimeout('5')">
+              <td>
+                <label id="slide_timeout_5" class="settings_item_label i18n_add_MINUTE">5</label>
+              </td>
+              <td>
+                <img id="check_timeout_5" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr class="bottom_border" onclick="selectTimeout('10')">
+              <td>
+                <label id="slide_timeout_10" class="settings_item_label i18n_add_MINUTE">10</label>
+              </td>
+              <td>
+                <img id="check_timeout_10" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr class="bottom_border" onclick="selectTimeout('20')">
+              <td>
+                <label id="slide_timeout_20" class="settings_item_label i18n_add_MINUTE">20</label>
+              </td>
+              <td>
+                <img id="check_timeout_20" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+            <tr onclick="selectTimeout('-1')">
+              <td>
+                <label id="slide_timeout_auto" class="settings_item_label i18n_DISABLED"></label>
+              </td>
+              <td>
+                <img id="check_timeout_auto" src="img/101.png" class="check_icon">
+              </td>
+            </tr>
+          </table>
+        </div>
+        <input type="hidden" id="tmp_timeout">
+      </nav>
+
+    </form>
+  </body>
+</html>
+

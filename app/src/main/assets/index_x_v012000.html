@@ -1,0 +1,350 @@
+<html lang="ja">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval';">
+    <title>THETA360 setting</title>
+    <script type="text/javascript" src="js/jquery.js"></script>
+    <script type="text/javascript" src="js/aes.js"></script>
+    <script type="text/javascript" src="js/pbkdf2.js"></script>
+    <script type="text/javascript" src="js/encryption.js"></script>
+    <script type="text/javascript" src="js/update.js"></script>
+    <script type="text/javascript" src="js/jquery.i18n.properties.js"></script>
+    <script type="text/javascript" src="js/i18n.js"></script>
+    <script type="text/javascript" src="js/streaming.js"></script>
+    <script type="text/javascript" src="js/tippy.all.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/light.css">
+    <link rel="stylesheet" type="text/css" href="css/design.css">
+  </head>
+
+  <body>
+    <script>
+
+        #JS_INJECTION#
+
+        /* Transition to the smartphone design when the screen size is small */
+        if (screen.width <= 736) {
+            window.location.href = "/index_x_sp_v012000.html";
+        }
+
+        $(function(){
+          /* Embed multilingual correspondence character string */
+          updateMessage();
+
+          /* Set text from THETA status code */
+          message_code = $("#status_label_tmp").text();
+          if (message_code == "1") {
+              $("#status_label").text(`MESSSAGE_RUNNING`);
+              changeStatusReady();
+          } else if (message_code == "2") {
+              $("#status_label").text(MESSSAGE_LIVE_STREAMING);
+              changeStatusLive();
+          } else if (message_code == "3") {
+              $("#status_label").text(MESSSAGE_STOP_STREAMING);
+              changeStatusReady();
+          } else if (message_code == "4") {
+              $("#status_label").text(MESSSAGE_ERROR_CONNECT_SERVER);
+              changeStatusError();
+          } else if (message_code == "5") {
+              $("#status_label").text(MESSSAGE_ERROR_NOT_USER_SETTING);
+              changeStatusError();
+          } else if (message_code == "6") {
+              $("#status_label").text(MESSSAGE_TIMEOUT);
+              changeStatusError();
+          } else if (message_code == "7") {
+              $("#status_label").text(MESSSAGE_ERROR_INITIALIZATION);
+              changeStatusError();
+          } else {
+              $("#status_label").text(MESSSAGE_ERROR_UNEXPECTED + data);
+              changeStatusError();
+          }
+
+          /* Initialize encryption key and Initial Vector */
+          initEncryption();
+
+          /* Decoding */
+          var decText = $('#crypt_text').val();
+          $('#stream_name_text').val(dec(decText));
+
+          /* Regularly update status */
+          setInterval("update()", 1000);
+
+          /* Encrypt stream name when sending */
+          $('#form_id').submit(function(){
+              var src = $('#stream_name_text').val();
+              $('#stream_name_text').val(""); /* Clear flat text */
+
+              var dest = end(src);
+              $('#crypt_text').val(dest);
+
+              return true;
+          });
+
+          /* Changed bit rate options according to picture quality */
+          $('#movie').change(function() {
+              var val = $(this).val();
+
+              if(val == 'MOVIE4K'){
+                  $('#bitrate4k').show();
+                  $('#bitrate4k_15fps').hide();
+                  $('#bitrate2k').hide();
+                  $('#bitrate2k_15fps').hide();
+                  $('#bitrate1k').hide();
+                  $('#bitrate1k_15fps').hide();
+                  $('#bitrate4k').val('20');
+              }else if(val == 'MOVIE4K_15FPS'){
+                  $('#bitrate4k').hide();
+                  $('#bitrate4k_15fps').show();
+                  $('#bitrate2k').hide();
+                  $('#bitrate2k_15fps').hide();
+                  $('#bitrate1k').hide();
+                  $('#bitrate1k_15fps').hide();
+                  $('#bitrate4k_15fps').val('10');
+              }else if(val == 'MOVIE2K'){
+                  $('#bitrate4k').hide();
+                  $('#bitrate4k_15fps').hide();
+                  $('#bitrate2k').show();
+                  $('#bitrate2k_15fps').hide();
+                  $('#bitrate1k').hide();
+                  $('#bitrate1k_15fps').hide();
+                  $('#bitrate2k').val('6');
+              }else if(val == 'MOVIE2K_15FPS'){
+                  $('#bitrate4k').hide();
+                  $('#bitrate4k_15fps').hide();
+                  $('#bitrate2k').hide();
+                  $('#bitrate2k_15fps').show();
+                  $('#bitrate1k').hide();
+                  $('#bitrate1k_15fps').hide();
+                  $('#bitrate2k_15fps').val('3');
+              }else if(val == 'MOVIE1K'){
+                  $('#bitrate4k').hide();
+                  $('#bitrate4k_15fps').hide();
+                  $('#bitrate2k').hide();
+                  $('#bitrate2k_15fps').hide();
+                  $('#bitrate1k').show();
+                  $('#bitrate1k_15fps').hide();
+                  $('#bitrate2k').val('0.85');
+              }else{
+                  $('#bitrate4k').hide();
+                  $('#bitrate4k_15fps').hide();
+                  $('#bitrate2k').hide();
+                  $('#bitrate2k_15fps').hide();
+                  $('#bitrate1k').hide();
+                  $('#bitrate1k_15fps').show();
+                  $('#bitrate2k_15fps').val('0.42');
+              }
+          });
+        });
+
+        function getBitrateVal() {
+　　        var movie = $('#movie').val();
+            if(movie == 'MOVIE4K'){
+                return $('#bitrate4k').val();
+            } else if(movie == 'MOVIE4K_15FPS'){
+                return $('#bitrate4k_15fps').val();
+            } else if(movie == 'MOVIE2K'){
+                return $('#bitrate2k').val();
+            } else if(movie == 'MOVIE2K_15FPS'){
+                return $('#bitrate2k_15fps').val();
+            } else if(movie == 'MOVIE1K'){
+                return $('#bitrate1k').val();
+            } else {
+                return $('#bitrate1k_15fps').val();
+            }
+        }
+
+        function changeStatusReady() {
+            $("#status_img_1").show();
+            $("#status_img_2").hide();
+            $("#status_img_3").hide();
+            $("#stream_start_button").show();
+            $("#stream_stop_button").hide();
+            $(".settings_item_input").prop("disabled", false);
+            $(".settings_label").css("opacity", "1");
+            $("#submit_button").prop("disabled", false);
+        }
+
+        function changeStatusLive() {
+            $("#status_img_1").hide();
+            $("#status_img_2").show();
+            $("#status_img_3").hide();
+            $("#stream_start_button").hide();
+            $("#stream_stop_button").show();
+            $(".settings_item_input").prop("disabled", true);
+            $(".settings_label").css("opacity", "0.3");
+            $("#auto_bitrate_button").prop("disabled", true);
+            $("#submit_button").prop("disabled", true);
+        }
+
+        function changeStatusError() {
+            $("#status_img_1").hide();
+            $("#status_img_2").hide();
+            $("#status_img_3").show();
+            $("#stream_start_button").show();
+            $("#stream_stop_button").hide();
+            $(".settings_item_input").prop("disabled", false);
+            $(".settings_label").css("opacity", "1");
+            if (getBitrateVal() == "-1") {
+                $("#auto_bitrate_button").prop("disabled", false);
+                if ($("#auto_bitrate").val() != "" && $("#auto_bitrate").val() != "null") {
+                     $("#submit_button").prop("disabled", false);
+                }
+            } else {
+                $("#submit_button").prop("disabled", false);
+            }
+        }
+
+        function prevent_xss(string){
+          return string
+              .replace(/\&/g, '&amp;')
+              .replace(/\</g, '&lt;')
+              .replace(/\>/g, '&gt;')
+              .replace(/\"/g, '&quot;')
+              .replace(/\'/g, '&#x27;');
+        }
+
+    </script>
+
+    <div id="title_box">
+      <img id="title" src="img/05.png">
+    </div>
+
+    <div id="head_box" class="unit_box">
+      <div id="status_box">
+        <img id="status_img_1" class="status_img" src="img/01_01.png">
+        <img id="status_img_2" class="status_img" src="img/01_02.png" hidden>
+        <img id="status_img_3" class="status_img" src="img/01_03.png" hidden>
+        <label id="status_label"></label>
+        <label id="status_label_tmp" hidden></label>
+      </div>
+      <div id="operate_theta">
+        <div id="stream_button_box">
+          <button id="stream_start_button" type='button' onclick="streaming()" class="i18n_START_LIVE_STREAMING"></button>
+          <button id="stream_stop_button" type='button' onclick="streaming()" class="i18n_STOP_LIVE_STREAMING" hidden></button>
+        </div>
+      </div>
+      <p id="description">
+        <label id="description_label" class="i18n_DESCRIPTION"></label>
+      </p>
+    </div>
+
+    <div id="main_box">
+      <div id="main_left_box">
+        <form action='/index_x_v012000.html' method='post' id="form_id">
+
+          <div id="youtube_box" class="unit_box">
+            <p class="settings_name">
+              <label class="i18n_SERVER_URL settings_label settings_name_label"></label>
+            </p>
+            <p id="server_url_input" class="settings_item">
+              <input type='text' id="server_url_text" name='server_url' onchange="this.value = prevent_xss(this.value)" class="settings_item_input">
+            </p>
+            <p class="settings_name">
+              <label class="i18n_STREAM_NAME settings_label settings_name_label"></label>
+            </p>
+            <p id="stream_name_input" class="settings_item">
+              <input type="text" id="stream_name_text" name='stream_name' onchange="this.value = prevent_xss(this.value)" class="settings_item_input">
+            </p>
+          </div>
+
+          <div id="settings_box" class="unit_box">
+            <p class="settings_name">
+              <label class="i18n_MOVIE_SIZE settings_label settings_name_label"></label>
+            </p>
+            <p class="settings_item">
+              <select id="movie" name="movie" class="settings_item_input">
+                <option value="MOVIE4K">4K(3840x2160) 30fps</option>
+                <option value="MOVIE4K_15FPS">4K(3840x2160) 15fps</option>
+                <option value="MOVIE2K">2K(1920x1080) 30fps</option>
+                <option value="MOVIE2K_15FPS">2K(1920x1080) 15fps</option>
+                <option value="MOVIE1K">1K(1024x576) 30fps</option>
+                <option value="MOVIE1K_15FPS">1K(1024x576) 15fps</option>
+              </select>
+            </p>
+            <p id="bitrate_box" class="settings_name">
+              <label class="i18n_BITRATE settings_label settings_name_label"></label>
+            </p>
+            <p class="settings_item">
+              <table id="bitrate_table">
+                <tr>
+                  <td>
+                    <select id="bitrate4k" name="bitrate4k" class="settings_item_input select_bitrate">
+                      <option value="40">40Mbps</option>
+                      <option value="20">20Mbps</option>
+                      <option value="12">12Mbps</option>
+                    </select>
+                    <select id="bitrate4k_15fps" name="bitrate4k_15fps" class="settings_item_input select_bitrate">
+                      <option value="20">20Mbps</option>
+                      <option value="10">10Mbps</option>
+                      <option value="6">6Mbps</option>
+                    </select>
+                    <select id="bitrate2k" name="bitrate2k" class="settings_item_input select_bitrate">
+                      <option value="16">16Mbps</option>
+                      <option value="6">6Mbps</option>
+                      <option value="3">3Mbps</option>
+                    </select>
+                    <select id="bitrate2k_15fps" name="bitrate2k_15fps" class="settings_item_input select_bitrate">
+                      <option value="8">8Mbps</option>
+                      <option value="3">3Mbps</option>
+                      <option value="1.5">1.5Mbps</option>
+                    </select>
+                    <select id="bitrate1k" name="bitrate1k" class="settings_item_input select_bitrate">
+                      <option value="2">2Mbps</option>
+                      <option value="0.85">0.85Mbps</option>
+                      <option value="0.5">0.5Mbps</option>
+                    </select>
+                    <select id="bitrate1k_15fps" name="bitrate1k_15fps" class="settings_item_input select_bitrate">
+                      <option value="1">1Mbps</option>
+                      <option value="0.42">0.42Mbps</option>
+                      <option value="0.25">0.25Mbps</option>
+                    </select>
+                  </td>
+                </tr>
+              </table>
+            </p>
+            <p class="settings_name">
+                <label class="i18n_AUDIO_SAMPLING_RATE settings_label settings_name_label"></label>
+            </p>
+            <p id="audio_sampling_rate" class="settings_item">
+              <select id="audio_sampling_rate_text" name="audio_sampling_rate" class="settings_item_input">
+                  <option value="44100">44.1KHz</option>
+                  <option value="48000">48.0KHz</option>
+              </select>
+            </p>
+            <p class="settings_name">
+              <label class="i18n_TIMEOUT settings_label settings_name_label"></label>
+            </p>
+            <p id="no_operation_timeout_minute" class="settings_item">
+              <select id="no_operation_timeout_minute_text" name="no_operation_timeout_minute" class="settings_item_input">
+                <option value="3">3</option>
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="-1" class="i18n_DISABLED"></option>
+              </select>
+            </p>
+
+          </div>
+
+          <div id="submit_button_box">
+            <button id="submit_button" type='submit' name='action' value='send' class="i18n_SEND_BUTTON"></button>
+          </div>
+
+          <input type="hidden" name="update" value="1">
+          <input type="hidden" name="crypt" value="0" id="crypt_text">
+          <span type="hidden" id="encryption_key">
+          <span type="hidden" id="encryption_iv">
+
+        </form>
+      </div>
+
+      <div id="main_right_box" class="unit_box">
+        <div id="img_box">
+            <img src="img/02_03.png" id="theta_x_img">
+        </div>
+
+      </div>
+
+    </div>
+  </body>
+</html>
+

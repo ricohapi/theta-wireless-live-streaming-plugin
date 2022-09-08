@@ -269,7 +269,12 @@ public class AndroidWebServer extends Activity {
             switch (ThetaModel.getValue(ThetaInfo.getThetaModelName())){
                 case THETA_X:
                     if ("/".equals(uri)) {
-                        uri = "index_x.html";
+                        String version = ThetaInfo.getThetaFirmwareVersion(context);
+                        if (version.compareTo("1.20.0") >= 0) {
+                            uri = "index_x_v012000.html";
+                        } else {
+                            uri = "index_x.html";
+                        }
                     }
                     break;
                 case THETA_Z1:
@@ -311,19 +316,37 @@ public class AndroidWebServer extends Activity {
                         values.put("movie_width", Bitrate.MOVIE_WIDTH_4K);
                         values.put("movie_height", Bitrate.MOVIE_HEIGHT_4K);
                         values.put("bitrate", parms.get("bitrate4k"));
-                        values.put("fps", Bitrate.FPS_4K);
+                        values.put("fps", Bitrate.FPS_4K_30);
+                    } else if (MovieTypes.Movie4k_15fps.getString().equals(movieType)) {
+                        // 4k
+                        values.put("movie_width", Bitrate.MOVIE_WIDTH_4K);
+                        values.put("movie_height", Bitrate.MOVIE_HEIGHT_4K);
+                        values.put("bitrate", parms.get("bitrate4k_15fps"));
+                        values.put("fps", Bitrate.FPS_4K_15);
                     } else if (MovieTypes.Movie2k.getString().equals(movieType)) {
                         // 2k
                         values.put("movie_width", Bitrate.MOVIE_WIDTH_2K);
                         values.put("movie_height", Bitrate.MOVIE_HEIGHT_2K);
                         values.put("bitrate", parms.get("bitrate2k"));
-                        values.put("fps", Bitrate.FPS_2K);
+                        values.put("fps", Bitrate.FPS_2K_30);
+                    } else if (MovieTypes.Movie2k_15fps.getString().equals(movieType)) {
+                        // 2k
+                        values.put("movie_width", Bitrate.MOVIE_WIDTH_2K);
+                        values.put("movie_height", Bitrate.MOVIE_HEIGHT_2K);
+                        values.put("bitrate", parms.get("bitrate2k_15fps"));
+                        values.put("fps", Bitrate.FPS_2K_15);
                     } else if (MovieTypes.Movie1k.getString().equals(movieType)) {
                         // 1k
                         values.put("movie_width", Bitrate.MOVIE_WIDTH_1K);
                         values.put("movie_height", Bitrate.MOVIE_HEIGHT_1K);
                         values.put("bitrate", parms.get("bitrate1k"));
-                        values.put("fps", Bitrate.FPS_1K);
+                        values.put("fps", Bitrate.FPS_1K_30);
+                    } else if (MovieTypes.Movie1k_15fps.getString().equals(movieType)) {
+                        // 1k
+                        values.put("movie_width", Bitrate.MOVIE_WIDTH_1K);
+                        values.put("movie_height", Bitrate.MOVIE_HEIGHT_1K);
+                        values.put("bitrate", parms.get("bitrate1k_15fps"));
+                        values.put("fps", Bitrate.FPS_1K_15);
                     } else {
                         // 0.6k
                         values.put("movie_width", Bitrate.MOVIE_WIDTH_06K);
@@ -448,27 +471,66 @@ public class AndroidWebServer extends Activity {
                     + "\\$('#encryption_iv').val('" + ENCRYPTION_IV + "');";
 
                 // When the width is 3840, it is judged to be 4 K, and selection of the bit rate of 2 k is made invisible.
-                if (settingData.getMovieWidth() == 3840) {
+                if (settingData.getMovieWidth() == 3840 && settingData.getFps() == 30.0) {
                     JSCode += "\\$('#movie').val('MOVIE4K');";
                     JSCode += "\\$('#bitrate4k').show();";
+                    JSCode += "\\$('#bitrate4k_15fps').hide();";
                     JSCode += "\\$('#bitrate2k').hide();";
+                    JSCode += "\\$('#bitrate2k_15fps').hide();";
                     JSCode += "\\$('#bitrate1k').hide();";
+                    JSCode += "\\$('#bitrate1k_15fps').hide();";
                     JSCode += "\\$('#bitrate06k').hide();";
                     JSCode += "\\$('#bitrate4k').val('" + settingData.getBitRate() + "');";
-                } else if (settingData.getMovieWidth() == 1920) {
+                } else if (settingData.getMovieWidth() == 3840 && settingData.getFps() == 15.0) {
+                    JSCode += "\\$('#movie').val('MOVIE4K_15FPS');";
+                    JSCode += "\\$('#bitrate4k').hide();";
+                    JSCode += "\\$('#bitrate4k_15fps').show();";
+                    JSCode += "\\$('#bitrate2k').hide();";
+                    JSCode += "\\$('#bitrate2k_15fps').hide();";
+                    JSCode += "\\$('#bitrate1k').hide();";
+                    JSCode += "\\$('#bitrate1k_15fps').hide();";
+                    JSCode += "\\$('#bitrate06k').hide();";
+                    JSCode += "\\$('#bitrate4k_15fps').val('" + settingData.getBitRate() + "');";
+                } else if (settingData.getMovieWidth() == 1920 && settingData.getFps() == 30.0) {
                     JSCode += "\\$('#movie').val('MOVIE2K');";
                     JSCode += "\\$('#bitrate4k').hide();";
+                    JSCode += "\\$('#bitrate4k_15fps').hide();";
                     JSCode += "\\$('#bitrate2k').show();";
+                    JSCode += "\\$('#bitrate2k_15fps').hide();";
                     JSCode += "\\$('#bitrate1k').hide();";
+                    JSCode += "\\$('#bitrate1k_15fps').hide();";
                     JSCode += "\\$('#bitrate06k').hide();";
                     JSCode += "\\$('#bitrate2k').val('" + settingData.getBitRate() + "');";
-                } else if (settingData.getMovieWidth() == 1024) {
+                } else if (settingData.getMovieWidth() == 1920 && settingData.getFps() == 15.0) {
+                    JSCode += "\\$('#movie').val('MOVIE2K_15FPS');";
+                    JSCode += "\\$('#bitrate4k').hide();";
+                    JSCode += "\\$('#bitrate4k_15fps').hide();";
+                    JSCode += "\\$('#bitrate2k').hide();";
+                    JSCode += "\\$('#bitrate2k_15fps').show();";
+                    JSCode += "\\$('#bitrate1k').hide();";
+                    JSCode += "\\$('#bitrate1k_15fps').hide();";
+                    JSCode += "\\$('#bitrate06k').hide();";
+                    JSCode += "\\$('#bitrate2k_15fps').val('" + settingData.getBitRate() + "');";
+                } else if (settingData.getMovieWidth() == 1024 && settingData.getFps() == 30.0) {
                     JSCode += "\\$('#movie').val('MOVIE1K');";
                     JSCode += "\\$('#bitrate4k').hide();";
+                    JSCode += "\\$('#bitrate4k_15fps').hide();";
                     JSCode += "\\$('#bitrate2k').hide();";
+                    JSCode += "\\$('#bitrate2k_15fps').hide();";
                     JSCode += "\\$('#bitrate1k').show();";
+                    JSCode += "\\$('#bitrate1k_15fps').hide();";
                     JSCode += "\\$('#bitrate06k').hide();";
                     JSCode += "\\$('#bitrate1k').val('" + settingData.getBitRate() + "');";
+                } else if (settingData.getMovieWidth() == 1024 && settingData.getFps() == 15.0) {
+                    JSCode += "\\$('#movie').val('MOVIE1K_15FPS');";
+                    JSCode += "\\$('#bitrate4k').hide();";
+                    JSCode += "\\$('#bitrate4k_15fps').hide();";
+                    JSCode += "\\$('#bitrate2k').hide();";
+                    JSCode += "\\$('#bitrate2k_15fps').hide();";
+                    JSCode += "\\$('#bitrate1k').hide();";
+                    JSCode += "\\$('#bitrate1k_15fps').show();";
+                    JSCode += "\\$('#bitrate06k').hide();";
+                    JSCode += "\\$('#bitrate1k_15fps').val('" + settingData.getBitRate() + "');";
                 } else {
                     JSCode += "\\$('#movie').val('MOVIE06K');";
                     JSCode += "\\$('#bitrate4k').hide();";

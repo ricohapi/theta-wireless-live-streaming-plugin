@@ -53,7 +53,7 @@ public class SettingData {
         this.cryptText = "";
         this.movieWidth = Bitrate.MOVIE_WIDTH_4K;
         this.movieHeight = Bitrate.MOVIE_HEIGHT_2K;
-        this.fps = Bitrate.FPS_4K;
+        this.fps = Bitrate.FPS_4K_30;
         this.bitRate = Bitrate.BITRATE_4K_DEFAULT;
         this.autoBitRate = "";
         this.noOperationTimeoutMinute = AndroidWebServer.TIMEOUT_DEFAULT_MINUTE;
