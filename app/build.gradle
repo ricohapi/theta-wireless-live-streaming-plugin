@@ -8,8 +8,8 @@ android {
         applicationId "com.theta360.cloudstreaming"
         minSdkVersion Integer.parseInt(project.ANDROID_BUILD_MIN_SDK_VERSION)
         targetSdkVersion Integer.parseInt(project.ANDROID_BUILD_TARGET_SDK_VERSION)
-        versionCode 8
-        versionName "1.2.1"
+        versionCode 9
+        versionName "1.2.2"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }

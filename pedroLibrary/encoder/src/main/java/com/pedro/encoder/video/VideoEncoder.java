@@ -69,7 +69,7 @@ public class VideoEncoder extends BaseEncoder implements GetCameraData {
       int iFrameInterval, FormatVideoEncoder formatVideoEncoder, int avcProfile,
       int avcProfileLevel) {
     this.width = width;
-    height = (int)(width*9/16);
+    //height = (int)(width*9/16);  //THETA X fw1.20 supports 16:9 preview mode
     this.height = height;
     this.fps = fps;
     this.bitRate = bitRate;

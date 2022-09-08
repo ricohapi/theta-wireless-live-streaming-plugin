@@ -23,7 +23,11 @@ public enum MovieTypes {
     Movie4k("MOVIE4K", 1),
     Movie2k("MOVIE2K", 2),
     Movie1k("MOVIE1K", 3),
-    Movie06k("MOVIE06K", 4);
+    Movie06k("MOVIE06K", 4),
+    Movie4k_15fps("MOVIE4K_15FPS", 5),
+    Movie2k_15fps("MOVIE2K_15FPS", 6),
+    Movie1k_15fps("MOVIE1K_15FPS", 7),
+    ;
 
     private final String name;
     private final int id;

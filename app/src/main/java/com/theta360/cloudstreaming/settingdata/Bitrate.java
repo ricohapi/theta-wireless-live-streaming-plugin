@@ -25,8 +25,11 @@ import java.util.Map;
 public class Bitrate {
     public static final int MOVIE_WIDTH_4K = 3840;
     public static final int MOVIE_HEIGHT_4K = 2160;
-    public static final double FPS_4K = 30.0;
+    public static final double FPS_4K_30 = 30.0;
+    public static final double FPS_4K_15 = 15.0;
     public static final String BITRATE_4K_DEFAULT = "20";
+    public static final String BITRATE_4K_6 = "6";
+    public static final String BITRATE_4K_10 = "10";
     public static final String BITRATE_4K_12 = "12";
     public static final String BITRATE_4K_20 = "20";
     public static final String BITRATE_4K_40 = "40";
@@ -43,10 +46,13 @@ public class Bitrate {
 
     public static final int MOVIE_WIDTH_2K = 1920;
     public static final int MOVIE_HEIGHT_2K = 1080;
-    public static final double FPS_2K = 30.0;
+    public static final double FPS_2K_30 = 30.0;
+    public static final double FPS_2K_15 = 15.0;
     public static final String BITRATE_2K_DEFAULT = "6";
+    public static final String BITRATE_2K_1_5 = "1.5";
     public static final String BITRATE_2K_3 = "3";
     public static final String BITRATE_2K_6 = "6";
+    public static final String BITRATE_2K_8 = "8";
     public static final String BITRATE_2K_16 = "16";
     private static final int DELAY_AVERAGE_BYTE_BORDER_2K_3 = 400000;
     private static final int DELAY_AVERAGE_BYTE_BORDER_2K_6 = 800000;
@@ -61,10 +67,14 @@ public class Bitrate {
 
     public static final int MOVIE_WIDTH_1K = 1024;
     public static final int MOVIE_HEIGHT_1K = 576;
-    public static final double FPS_1K = 30.0;
+    public static final double FPS_1K_30 = 30.0;
+    public static final double FPS_1K_15 = 15.0;
     public static final String BITRATE_1K_DEFAULT = "0.85";
+    public static final String BITRATE_1K_025 = "0.25";
+    public static final String BITRATE_1K_042 = "0.42";
     public static final String BITRATE_1K_05 = "0.5";
     public static final String BITRATE_1K_085 = "0.85";
+    public static final String BITRATE_1K_1 = "1";
     public static final String BITRATE_1K_2 = "2";
     private static final int DELAY_AVERAGE_BYTE_BORDER_1K_05 = 300000;
     private static final int DELAY_AVERAGE_BYTE_BORDER_1K_085 = 500000;

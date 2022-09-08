@@ -5,7 +5,9 @@ import android.content.res.Configuration;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
+import com.theta360.pluginlibrary.activity.ThetaInfo;
 import com.theta360.pluginlibrary.factory.Camera;
+import com.theta360.pluginlibrary.factory.Camera.Parameters;
 import theta360.media.CamcorderProfile;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -156,31 +158,52 @@ public class Camera1ApiManager implements Camera.PreviewCallback {
       isPortrait = context.getResources().getConfiguration().orientation
               == Configuration.ORIENTATION_PORTRAIT;
       Camera.Parameters parameters = camera.getParameters();
-      height = (int)(width*5/10);
-      parameters.setPreviewSize(width, height);
-      parameters.setPreviewFormat(imageFormat);
       //TODO 天頂補正ON FW対応後、コメント解除
 //      if(!ThetaModel.isVCameraModel()) {
 //        parameters.set("RIC_PROC_ZENITH_CORRECTION", "RicZenithCorrectionOnAuto");
 //      }
-      List<int[]> list = new ArrayList<>();
-      int[] i = {1000, 2000, 3000, 4000, 5000, 6000, 8000, 10000, 15000, 20000, 24000, 30000};
-      list.add(i);
-//      List<int[]> list = parameters.getSupportedPreviewFpsRange();
-      int[] range = adaptFpsRange(fps, list);
-      parameters.setPreviewFpsRange(range[0], range[1]);
-      camera.setParameters();
-      camera.setDisplayOrientation(rotation);
-      if (surfaceView != null) {
-        camera.setPreviewDisplay(surfaceView.getHolder());
-        camera.addCallbackBuffer(yuvBuffer);
-        camera.setPreviewCallbackWithBuffer(this);
-      } else if (textureView != null) {
-        camera.setPreviewTexture(textureView.getSurfaceTexture());
-        camera.addCallbackBuffer(yuvBuffer);
-        camera.setPreviewCallbackWithBuffer(this);
+      String version = ThetaInfo.getThetaFirmwareVersion(context);
+      if(!ThetaModel.isVCameraModel() && version.compareTo("1.20.0") >= 0){
+        //THETA X fw1.20 supports 16:9 preview mode
+        parameters.setPreviewSize(width, height);
+        parameters.setPreviewFormat(imageFormat);
+        if(fps == 15) {
+          parameters.setPreviewFrameRate(0);  //THETA X fw1.20 15fps mode
+        } else {
+          parameters.setPreviewFrameRate(30);  //THETA X fw1.20 30fps mode
+        }
+        camera.setParameters();
+        camera.setDisplayOrientation(rotation);
+        if (surfaceView != null) {
+          camera.setPreviewDisplay(surfaceView.getHolder());
+        } else if (textureView != null) {
+          camera.setPreviewTexture(textureView.getSurfaceTexture());
+        } else {
+          camera.setPreviewTexture(surfaceTexture);
+        }
       } else {
-        camera.setPreviewTexture(surfaceTexture);
+        height = (int) (width * 5 / 10);  //not supports 16:9 preview mode
+        parameters.setPreviewSize(width, height);
+        parameters.setPreviewFormat(imageFormat);
+        List<int[]> list = new ArrayList<>();
+        int[] i = {1000, 2000, 3000, 4000, 5000, 6000, 8000, 10000, 15000, 20000, 24000, 30000};
+        list.add(i);
+        //      List<int[]> list = parameters.getSupportedPreviewFpsRange();
+        int[] range = adaptFpsRange(fps, list);
+        parameters.setPreviewFpsRange(range[0], range[1]);
+        camera.setParameters();
+        camera.setDisplayOrientation(rotation);
+        if (surfaceView != null) {
+          camera.setPreviewDisplay(surfaceView.getHolder());
+          camera.addCallbackBuffer(yuvBuffer);
+          camera.setPreviewCallbackWithBuffer(this);
+        } else if (textureView != null) {
+          camera.setPreviewTexture(textureView.getSurfaceTexture());
+          camera.addCallbackBuffer(yuvBuffer);
+          camera.setPreviewCallbackWithBuffer(this);
+        } else {
+          camera.setPreviewTexture(surfaceTexture);
+        }
       }
       camera.startPreview();
       running = true;

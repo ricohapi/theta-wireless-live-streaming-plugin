@@ -54,6 +54,7 @@ import com.theta360.cloudstreaming.settingdata.Bitrate;
 import com.theta360.cloudstreaming.settingdata.SettingData;
 import com.theta360.cloudstreaming.settingdata.StatusType;
 import com.theta360.pluginlibrary.activity.PluginActivity;
+import com.theta360.pluginlibrary.activity.ThetaInfo;
 import com.theta360.pluginlibrary.callback.KeyCallback;
 import com.theta360.pluginlibrary.receiver.KeyReceiver;
 import com.theta360.pluginlibrary.values.LedColor;
@@ -87,18 +88,28 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
     private final long CONNECTION_FAILED_INTERVAL_MSEC = 2000;
     private final int LOG_DELETE_ELAPSED_DAYS = 30;
     private final String LABELS_MOVIE_SIZE_4K = "4K(3840x2160) 30fps";
+    private final String LABELS_MOVIE_SIZE_4K_15FPS = "4K(3840x2160) 15fps";
     private final String LABELS_MOVIE_SIZE_2K = "2K(1920x1080) 30fps";
+    private final String LABELS_MOVIE_SIZE_2K_15FPS = "2K(1920x1080) 15fps";
     private final String LABELS_MOVIE_SIZE_1K = "1K(1024x576) 30fps";
+    private final String LABELS_MOVIE_SIZE_1K_15FPS = "1K(1024x576) 15fps";
     private final String LABELS_MOVIE_SIZE_06K = "0.6K(640x320) 30fps";
     private final String LABELS_BITRATE_4K_40 = "40Mbps";
     private final String LABELS_BITRATE_4K_20 = "20Mbps";
     private final String LABELS_BITRATE_4K_12 = "12Mbps";
+    private final String LABELS_BITRATE_4K_10 = "10Mbps";
+    private final String LABELS_BITRATE_4K_6 = "6Mbps";
     private final String LABELS_BITRATE_2K_16 = "16Mbps";
+    private final String LABELS_BITRATE_2K_8 = "8Mbps";
     private final String LABELS_BITRATE_2K_6 = "6Mbps";
     private final String LABELS_BITRATE_2K_3 = "3Mbps";
+    private final String LABELS_BITRATE_2K_1_5 = "1.5Mbps";
     private final String LABELS_BITRATE_1K_2 = "2Mbps";
+    private final String LABELS_BITRATE_1K_1 = "1Mbps";
     private final String LABELS_BITRATE_1K_085 = "0.85Mbps";
     private final String LABELS_BITRATE_1K_05 = "0.5Mbps";
+    private final String LABELS_BITRATE_1K_042 = "0.42Mbps";
+    private final String LABELS_BITRATE_1K_025 = "0.25Mbps";
     private final String LABELS_BITRATE_06K_1 = "1Mbps";
     private final String LABELS_BITRATE_06K_036 = "0.36Mbps";
     private final String LABELS_BITRATE_06K_025 = "0.25Mbps";
@@ -147,8 +158,10 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
 
     private long lastConnectionFailedErrorTime = 0;
 
+    private String[] itemMovieSizeTable = null;
     private final String[] itemMovieSize_V = {LABELS_MOVIE_SIZE_4K, LABELS_MOVIE_SIZE_2K, LABELS_MOVIE_SIZE_1K, LABELS_MOVIE_SIZE_06K};
     private final String[] itemMovieSize_X = {LABELS_MOVIE_SIZE_4K, LABELS_MOVIE_SIZE_2K, LABELS_MOVIE_SIZE_1K};
+    private final String[] itemMovieSize_X_v102000 = {LABELS_MOVIE_SIZE_4K, LABELS_MOVIE_SIZE_4K_15FPS, LABELS_MOVIE_SIZE_2K, LABELS_MOVIE_SIZE_2K_15FPS, LABELS_MOVIE_SIZE_1K, LABELS_MOVIE_SIZE_1K_15FPS};
     private final String[] itemSamplingRate = {LABELS_SAMPLING_RATE_48000, LABELS_SAMPLING_RATE_44100};
 
     private LiveStreamingReceiver mLiveStreamingReceiver;
@@ -236,14 +249,19 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         bitrate = findViewById(R.id.txtbitrate);
         samplingRate = findViewById(R.id.textAudioSamplingRate);
         if(ThetaModel.isVCameraModel()) {
-            ArrayAdapter<String> adapter1 = new ArrayAdapter<String>(this, R.layout.spinner_item, itemMovieSize_V);
-            adapter1.setDropDownViewResource(R.layout.spinner_dropdown_item);
-            movieSize.setAdapter(adapter1);
+            itemMovieSizeTable = itemMovieSize_V;
         } else {
-            ArrayAdapter<String> adapter1 = new ArrayAdapter<String>(this, R.layout.spinner_item, itemMovieSize_X);
-            adapter1.setDropDownViewResource(R.layout.spinner_dropdown_item);
-            movieSize.setAdapter(adapter1);
+            String version = ThetaInfo.getThetaFirmwareVersion(con);
+            if (version.compareTo("1.20.0") >= 0) {
+                itemMovieSizeTable = itemMovieSize_X_v102000;
+            } else {
+                itemMovieSizeTable = itemMovieSize_X;
+            }
         }
+        ArrayAdapter<String> adapter1 = new ArrayAdapter<String>(this, R.layout.spinner_item, itemMovieSizeTable);
+        adapter1.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        movieSize.setAdapter(adapter1);
+
         ArrayAdapter<String> adapter3 = new ArrayAdapter<String>(this, R.layout.spinner_item, itemSamplingRate);
         adapter3.setDropDownViewResource(R.layout.spinner_dropdown_item);
         samplingRate.setAdapter(adapter3);
@@ -966,7 +984,7 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                                 values.put("movie_height", Bitrate.MOVIE_HEIGHT_2K);
                                 values.put("bitrate", Bitrate.BITRATE_2K_DEFAULT);
                                 values.put("auto_bitrate", "");
-                                values.put("fps", Bitrate.FPS_2K);
+                                values.put("fps", Bitrate.FPS_2K_30);
 
                                 values.put("server_url", "");
                                 values.put("stream_name", "");
@@ -978,7 +996,30 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                                 if (num != 1) {
                                     throw new SQLiteException("[setting data] initialize database error");
                                 }
-
+                                cursor = dbObject.query("theta360_setting", null, "id=?", new String[]{String.valueOf(PRIMARY_KEY_ID)}, null, null, null, null);
+                                if (cursor.moveToNext()) {
+                                    settingData = new SettingData();
+                                    settingData.setServerUrl(
+                                            cursor.getString(cursor.getColumnIndex("server_url")));
+                                    settingData.setStreamName(
+                                            cursor.getString(cursor.getColumnIndex("stream_name")));
+                                    settingData.setCryptText(
+                                            cursor.getString(cursor.getColumnIndex("crypt_text")));
+                                    settingData.setMovieWidth(
+                                            cursor.getInt(cursor.getColumnIndex("movie_width")));
+                                    settingData.setMovieHeight(
+                                            cursor.getInt(cursor.getColumnIndex("movie_height")));
+                                    settingData
+                                            .setFps(cursor.getDouble(cursor.getColumnIndex("fps")));
+                                    settingData.setBitRate(
+                                            cursor.getString(cursor.getColumnIndex("bitrate")));
+                                    settingData.setAudioSamplingRate(cursor.getInt(
+                                            cursor.getColumnIndex("audio_sampling_rate")));
+                                    settingData.setNoOperationTimeoutMinute(cursor.getInt(
+                                            cursor.getColumnIndex("no_operation_timeout_minute")));
+                                    settingData.setStatus(
+                                            cursor.getString(cursor.getColumnIndex("status")));
+                                }
                             }
 
                             if (settingData != null) {
@@ -996,35 +1037,100 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                                             streamName.setText(settingData.getStreamName());
                                             spinnerSelected = true;
 
-                                            if (settingData.getMovieWidth() == 3840 && settingData.getMovieHeight() == 2160) {
-                                                movieSize.setSelection(0);
-                                                setBitrateSpinner(0);
-                                                if (settingData.getBitRate().equals("40")){
-                                                    bitrate.setSelection(0);
-                                                } else if (settingData.getBitRate().equals("20")) {
-                                                    bitrate.setSelection(1);
-                                                } else if (settingData.getBitRate().equals("12")) {
-                                                    bitrate.setSelection(2);
+                                            String version = ThetaInfo.getThetaFirmwareVersion(con);
+                                            if ((!ThetaModel.isVCameraModel()) && (version.compareTo("1.20.0") >= 0)) {
+                                                if (settingData.getMovieWidth() == 3840 && settingData.getMovieHeight() == 2160 && settingData.getFps() == 30) {
+                                                    movieSize.setSelection(0);
+                                                    setBitrateSpinner(0);
+                                                    if (settingData.getBitRate().equals("40")) {
+                                                        bitrate.setSelection(0);
+                                                    } else if (settingData.getBitRate().equals("20")) {
+                                                        bitrate.setSelection(1);
+                                                    } else if (settingData.getBitRate().equals("12")) {
+                                                        bitrate.setSelection(2);
+                                                    }
+                                                } else if (settingData.getMovieWidth() == 3840 && settingData.getMovieHeight() == 2160 && settingData.getFps() == 15) {
+                                                    movieSize.setSelection(1);
+                                                    setBitrateSpinner(1);
+                                                    if (settingData.getBitRate().equals("20")){
+                                                        bitrate.setSelection(0);
+                                                    } else if (settingData.getBitRate().equals("10")) {
+                                                        bitrate.setSelection(1);
+                                                    } else if (settingData.getBitRate().equals("6")) {
+                                                        bitrate.setSelection(2);
+                                                    }
+                                                } else if (settingData.getMovieWidth() == 1920 && settingData.getMovieHeight() == 1080 && settingData.getFps() == 30) {
+                                                    movieSize.setSelection(2);
+                                                    setBitrateSpinner(2);
+                                                    if (settingData.getBitRate().equals("16")){
+                                                        bitrate.setSelection(0);
+                                                    } else if (settingData.getBitRate().equals("6")) {
+                                                        bitrate.setSelection(1);
+                                                    } else if (settingData.getBitRate().equals("3")) {
+                                                        bitrate.setSelection(2);
+                                                    }
+                                                } else if (settingData.getMovieWidth() == 1920 && settingData.getMovieHeight() == 1080 && settingData.getFps() == 15) {
+                                                    movieSize.setSelection(3);
+                                                    setBitrateSpinner(3);
+                                                    if (settingData.getBitRate().equals("8")){
+                                                        bitrate.setSelection(0);
+                                                    } else if (settingData.getBitRate().equals("3")) {
+                                                        bitrate.setSelection(1);
+                                                    } else if (settingData.getBitRate().equals("1.5")) {
+                                                        bitrate.setSelection(2);
+                                                    }
+                                                } else if (settingData.getMovieWidth() == 1024 && settingData.getMovieHeight() == 576 && settingData.getFps() == 30) {
+                                                    movieSize.setSelection(4);
+                                                    setBitrateSpinner(4);
+                                                    if (settingData.getBitRate().equals("2")){
+                                                        bitrate.setSelection(0);
+                                                    } else if (settingData.getBitRate().equals("0.85")) {
+                                                        bitrate.setSelection(1);
+                                                    } else if (settingData.getBitRate().equals("0.5")) {
+                                                        bitrate.setSelection(2);
+                                                    }
+                                                } else if (settingData.getMovieWidth() == 1024 && settingData.getMovieHeight() == 576 && settingData.getFps() == 15) {
+                                                    movieSize.setSelection(5);
+                                                    setBitrateSpinner(5);
+                                                    if (settingData.getBitRate().equals("1")){
+                                                        bitrate.setSelection(0);
+                                                    } else if (settingData.getBitRate().equals("0.42")) {
+                                                        bitrate.setSelection(1);
+                                                    } else if (settingData.getBitRate().equals("0.25")) {
+                                                        bitrate.setSelection(2);
+                                                    }
                                                 }
-                                            } else if (settingData.getMovieWidth() == 1920 && settingData.getMovieHeight() == 1080) {
-                                                movieSize.setSelection(1);
-                                                setBitrateSpinner(1);
-                                                if (settingData.getBitRate().equals("16")){
-                                                    bitrate.setSelection(0);
-                                                } else if (settingData.getBitRate().equals("6")) {
-                                                    bitrate.setSelection(1);
-                                                } else if (settingData.getBitRate().equals("3")) {
-                                                    bitrate.setSelection(2);
-                                                }
-                                            } else if (settingData.getMovieWidth() == 1024 && settingData.getMovieHeight() == 576) {
-                                                movieSize.setSelection(2);
-                                                setBitrateSpinner(2);
-                                                if (settingData.getBitRate().equals("2")){
-                                                    bitrate.setSelection(0);
-                                                } else if (settingData.getBitRate().equals("0.85")) {
-                                                    bitrate.setSelection(1);
-                                                } else if (settingData.getBitRate().equals("0.5")) {
-                                                    bitrate.setSelection(2);
+                                            } else {
+                                                if (settingData.getMovieWidth() == 3840 && settingData.getMovieHeight() == 2160) {
+                                                    movieSize.setSelection(0);
+                                                    setBitrateSpinner(0);
+                                                    if (settingData.getBitRate().equals("40")){
+                                                        bitrate.setSelection(0);
+                                                    } else if (settingData.getBitRate().equals("20")) {
+                                                        bitrate.setSelection(1);
+                                                    } else if (settingData.getBitRate().equals("12")) {
+                                                        bitrate.setSelection(2);
+                                                    }
+                                                } else if (settingData.getMovieWidth() == 1920 && settingData.getMovieHeight() == 1080) {
+                                                    movieSize.setSelection(1);
+                                                    setBitrateSpinner(1);
+                                                    if (settingData.getBitRate().equals("16")){
+                                                        bitrate.setSelection(0);
+                                                    } else if (settingData.getBitRate().equals("6")) {
+                                                        bitrate.setSelection(1);
+                                                    } else if (settingData.getBitRate().equals("3")) {
+                                                        bitrate.setSelection(2);
+                                                    }
+                                                } else if (settingData.getMovieWidth() == 1024 && settingData.getMovieHeight() == 576) {
+                                                    movieSize.setSelection(2);
+                                                    setBitrateSpinner(2);
+                                                    if (settingData.getBitRate().equals("2")){
+                                                        bitrate.setSelection(0);
+                                                    } else if (settingData.getBitRate().equals("0.85")) {
+                                                        bitrate.setSelection(1);
+                                                    } else if (settingData.getBitRate().equals("0.5")) {
+                                                        bitrate.setSelection(2);
+                                                    }
                                                 }
                                             }
 
@@ -1173,23 +1279,39 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
 
     private void setBitrateSpinner (int position) {
         List<String> items = new ArrayList<>();
-        switch (position) {
-            case 0:
+        String label = itemMovieSizeTable[position];
+        switch (label) {
+            case LABELS_MOVIE_SIZE_4K:
                 items.add(LABELS_BITRATE_4K_40);
                 items.add(LABELS_BITRATE_4K_20);
                 items.add(LABELS_BITRATE_4K_12);
                 break;
-            case 1:
+            case LABELS_MOVIE_SIZE_4K_15FPS:
+                items.add(LABELS_BITRATE_4K_20);
+                items.add(LABELS_BITRATE_4K_10);
+                items.add(LABELS_BITRATE_4K_6);
+                break;
+            case LABELS_MOVIE_SIZE_2K:
                 items.add(LABELS_BITRATE_2K_16);
                 items.add(LABELS_BITRATE_2K_6);
                 items.add(LABELS_BITRATE_2K_3);
                 break;
-            case 2:
+            case LABELS_MOVIE_SIZE_2K_15FPS:
+                items.add(LABELS_BITRATE_2K_8);
+                items.add(LABELS_BITRATE_2K_3);
+                items.add(LABELS_BITRATE_2K_1_5);
+                break;
+            case LABELS_MOVIE_SIZE_1K:
                 items.add(LABELS_BITRATE_1K_2);
                 items.add(LABELS_BITRATE_1K_085);
                 items.add(LABELS_BITRATE_1K_05);
                 break;
-            case 3:
+            case LABELS_MOVIE_SIZE_1K_15FPS:
+                items.add(LABELS_BITRATE_1K_1);
+                items.add(LABELS_BITRATE_1K_042);
+                items.add(LABELS_BITRATE_1K_025);
+                break;
+            case LABELS_MOVIE_SIZE_06K:
                 items.add(LABELS_BITRATE_06K_1);
                 items.add(LABELS_BITRATE_06K_036);
                 items.add(LABELS_BITRATE_06K_025);
@@ -1232,10 +1354,10 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
             case LABELS_MOVIE_SIZE_4K:
                 values.put("movie_width", Bitrate.MOVIE_WIDTH_4K);
                 values.put("movie_height", Bitrate.MOVIE_HEIGHT_4K);
-                values.put("fps", Bitrate.FPS_4K);
+                values.put("fps", Bitrate.FPS_4K_30);
                 settingData.setMovieWidth(Bitrate.MOVIE_WIDTH_4K);
                 settingData.setMovieHeight(Bitrate.MOVIE_HEIGHT_4K);
-                settingData.setFps(Bitrate.FPS_4K);
+                settingData.setFps(Bitrate.FPS_4K_30);
                 if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_4K_40)){
                     values.put("bitrate", Bitrate.BITRATE_4K_40);
                     settingData.setBitRate(Bitrate.BITRATE_4K_40);
@@ -1247,13 +1369,31 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                     settingData.setBitRate(Bitrate.BITRATE_4K_12);
                 }
                 break;
+            case LABELS_MOVIE_SIZE_4K_15FPS:
+                values.put("movie_width", Bitrate.MOVIE_WIDTH_4K);
+                values.put("movie_height", Bitrate.MOVIE_HEIGHT_4K);
+                values.put("fps", Bitrate.FPS_4K_15);
+                settingData.setFps(Bitrate.FPS_4K_15);
+                settingData.setMovieWidth(Bitrate.MOVIE_WIDTH_4K);
+                settingData.setMovieHeight(Bitrate.MOVIE_HEIGHT_4K);
+                if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_4K_20)){
+                    values.put("bitrate", Bitrate.BITRATE_4K_20);
+                    settingData.setBitRate(Bitrate.BITRATE_4K_20);
+                } else if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_4K_10)) {
+                    values.put("bitrate", Bitrate.BITRATE_4K_10);
+                    settingData.setBitRate(Bitrate.BITRATE_4K_10);
+                } else if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_4K_6)){
+                    values.put("bitrate", Bitrate.BITRATE_4K_6);
+                    settingData.setBitRate(Bitrate.BITRATE_4K_6);
+                }
+                break;
             case LABELS_MOVIE_SIZE_2K:
                 values.put("movie_width", Bitrate.MOVIE_WIDTH_2K);
                 values.put("movie_height", Bitrate.MOVIE_HEIGHT_2K);
-                values.put("fps", Bitrate.FPS_2K);
+                values.put("fps", Bitrate.FPS_2K_30);
                 settingData.setMovieWidth(Bitrate.MOVIE_WIDTH_2K);
                 settingData.setMovieHeight(Bitrate.MOVIE_HEIGHT_2K);
-                settingData.setFps(Bitrate.FPS_2K);
+                settingData.setFps(Bitrate.FPS_2K_30);
                 if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_2K_16)){
                     values.put("bitrate", Bitrate.BITRATE_2K_16);
                     settingData.setBitRate(Bitrate.BITRATE_2K_16);
@@ -1265,13 +1405,31 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                     settingData.setBitRate(Bitrate.BITRATE_2K_3);
                 }
                 break;
+            case LABELS_MOVIE_SIZE_2K_15FPS:
+                values.put("movie_width", Bitrate.MOVIE_WIDTH_2K);
+                values.put("movie_height", Bitrate.MOVIE_HEIGHT_2K);
+                values.put("fps", Bitrate.FPS_2K_15);
+                settingData.setFps(Bitrate.FPS_2K_15);
+                settingData.setMovieWidth(Bitrate.MOVIE_WIDTH_2K);
+                settingData.setMovieHeight(Bitrate.MOVIE_HEIGHT_2K);
+                if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_2K_8)){
+                    values.put("bitrate", Bitrate.BITRATE_2K_8);
+                    settingData.setBitRate(Bitrate.BITRATE_2K_8);
+                } else if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_2K_3)) {
+                    values.put("bitrate", Bitrate.BITRATE_2K_3);
+                    settingData.setBitRate(Bitrate.BITRATE_2K_3);
+                } else if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_2K_1_5)){
+                    values.put("bitrate", Bitrate.BITRATE_2K_1_5);
+                    settingData.setBitRate(Bitrate.BITRATE_2K_1_5);
+                }
+                break;
             case LABELS_MOVIE_SIZE_1K:
                 values.put("movie_width", Bitrate.MOVIE_WIDTH_1K);
                 values.put("movie_height", Bitrate.MOVIE_HEIGHT_1K);
-                values.put("fps", Bitrate.FPS_1K);
+                values.put("fps", Bitrate.FPS_1K_30);
                 settingData.setMovieWidth(Bitrate.MOVIE_WIDTH_1K);
                 settingData.setMovieHeight(Bitrate.MOVIE_HEIGHT_1K);
-                settingData.setFps(Bitrate.FPS_1K);
+                settingData.setFps(Bitrate.FPS_1K_30);
                 if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_1K_2)){
                     values.put("bitrate", Bitrate.BITRATE_1K_2);
                     settingData.setBitRate(Bitrate.BITRATE_1K_2);
@@ -1281,6 +1439,24 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
                 } else if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_1K_05)){
                     values.put("bitrate", Bitrate.BITRATE_1K_05);
                     settingData.setBitRate(Bitrate.BITRATE_1K_05);
+                }
+                break;
+            case LABELS_MOVIE_SIZE_1K_15FPS:
+                values.put("movie_width", Bitrate.MOVIE_WIDTH_1K);
+                values.put("movie_height", Bitrate.MOVIE_HEIGHT_1K);
+                values.put("fps", Bitrate.FPS_1K_15);
+                settingData.setFps(Bitrate.FPS_1K_15);
+                settingData.setMovieWidth(Bitrate.MOVIE_WIDTH_1K);
+                settingData.setMovieHeight(Bitrate.MOVIE_HEIGHT_1K);
+                if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_1K_1)){
+                    values.put("bitrate", Bitrate.BITRATE_1K_1);
+                    settingData.setBitRate(Bitrate.BITRATE_1K_1);
+                } else if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_1K_042)) {
+                    values.put("bitrate", Bitrate.BITRATE_1K_042);
+                    settingData.setBitRate(Bitrate.BITRATE_1K_042);
+                } else if(bitrate.getSelectedItem().toString().equals(LABELS_BITRATE_1K_025)){
+                    values.put("bitrate", Bitrate.BITRATE_1K_025);
+                    settingData.setBitRate(Bitrate.BITRATE_1K_025);
                 }
                 break;
             default:
