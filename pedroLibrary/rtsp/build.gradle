@@ -12,12 +12,15 @@ android {
     versionName "2.0.7"
   }
   buildTypes {
+    debug {
+      buildConfigField "String", "VERSION_NAME", "\"$versionName\"" //avoid BuildConfig.java error
+    }
     release {
       minifyEnabled false
       consumerProguardFiles 'proguard-rules.pro'
+      buildConfigField "String", "VERSION_NAME", "\"$versionName\"" //avoid BuildConfig.java error
     }
   }
-    buildToolsVersion '28.0.3'
 
     afterEvaluate {
     publishing {

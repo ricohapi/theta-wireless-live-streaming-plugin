@@ -16,7 +16,6 @@ android {
       consumerProguardFiles 'proguard-rules.pro'
     }
   }
-  buildToolsVersion '28.0.3'
 
   afterEvaluate {
     publishing {

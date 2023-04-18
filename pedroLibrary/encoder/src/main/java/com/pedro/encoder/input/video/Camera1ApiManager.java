@@ -158,10 +158,10 @@ public class Camera1ApiManager implements Camera.PreviewCallback {
       isPortrait = context.getResources().getConfiguration().orientation
               == Configuration.ORIENTATION_PORTRAIT;
       Camera.Parameters parameters = camera.getParameters();
-      //TODO 天頂補正ON FW対応後、コメント解除
-//      if(!ThetaModel.isVCameraModel()) {
-//        parameters.set("RIC_PROC_ZENITH_CORRECTION", "RicZenithCorrectionOnAuto");
-//      }
+      if(!ThetaModel.isVCameraModel()) {
+        parameters.set("RIC_PROC_ZENITH_CORRECTION", "RicZenithCorrectionOnAuto");
+        parameters.set("RIC_WATER_HOUSING", 0);
+      }
       String version = ThetaInfo.getThetaFirmwareVersion(context);
       if(!ThetaModel.isVCameraModel() && version.compareTo("1.20.0") >= 0){
         //THETA X fw1.20 supports 16:9 preview mode
