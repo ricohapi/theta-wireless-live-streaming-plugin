@@ -316,11 +316,13 @@ public class XCamera extends Camera {
 
     @Override
     public void setOneShotPreviewCallback(PreviewCallback cb) {
+        prCallback = cb;
         mCamera.setOneShotPreviewCallback(previewCallback);
     }
 
     @Override
     public void setPreviewCallbackWithBuffer(PreviewCallback cb) {
+        prCallback = cb;
         mCamera.setPreviewCallbackWithBuffer(previewCallback);
     }
 
@@ -404,7 +406,8 @@ public class XCamera extends Camera {
 
     @Override
     public void setPreviewCallback(PreviewCallback cb) {
-        mCamera.setPreviewCallback(null);
+        prCallback = cb;
+        mCamera.setPreviewCallback(previewCallback);
     }
 
     @Override

@@ -7,7 +7,6 @@ import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import com.theta360.pluginlibrary.activity.ThetaInfo;
 import com.theta360.pluginlibrary.factory.Camera;
-import com.theta360.pluginlibrary.factory.Camera.Parameters;
 import theta360.media.CamcorderProfile;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -195,12 +194,12 @@ public class Camera1ApiManager implements Camera.PreviewCallback {
         camera.setDisplayOrientation(rotation);
         if (surfaceView != null) {
           camera.setPreviewDisplay(surfaceView.getHolder());
-          camera.addCallbackBuffer(yuvBuffer);
-          camera.setPreviewCallbackWithBuffer(this);
+          //camera.addCallbackBuffer(yuvBuffer);
+          //camera.setPreviewCallbackWithBuffer(this);
         } else if (textureView != null) {
           camera.setPreviewTexture(textureView.getSurfaceTexture());
-          camera.addCallbackBuffer(yuvBuffer);
-          camera.setPreviewCallbackWithBuffer(this);
+          //camera.addCallbackBuffer(yuvBuffer);
+          //camera.setPreviewCallbackWithBuffer(this);
         } else {
           camera.setPreviewTexture(surfaceTexture);
         }
@@ -320,8 +319,8 @@ public class Camera1ApiManager implements Camera.PreviewCallback {
   public void stop() {
     if (!camera.isCameraNullCheck()) {
       camera.stopPreview();
-      camera.setPreviewCallback(null);
-      camera.setPreviewCallbackWithBuffer(null);
+      //camera.setPreviewCallback(null);
+      //camera.setPreviewCallbackWithBuffer(null);
       camera.release();
       camera.initializationCamera();
     }

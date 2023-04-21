@@ -548,9 +548,6 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         if (settingPolling != null) {
             settingPolling.exit();
         }
-        if (scheduleStreaming != null) {
-            scheduleStreaming.exit();
-        }
         if (delayJudgmentService != null) {
             delayJudgmentService.shutdownNow();
         }
@@ -820,52 +817,35 @@ public class MainActivity extends PluginActivity implements ConnectCheckerRtmp {
         scheduleStreaming = new ScheduleStreaming();
 
         try {
-            scheduleStreamingService = Executors.newSingleThreadExecutor();
-            scheduleStreamingService.execute(scheduleStreaming);
+            scheduleStreaming.run();
         } catch (Exception e) {
             e.printStackTrace();
             unexpectedError("E002");
-        } finally {
-            scheduleStreamingService.shutdown();
         }
     }
 
-    private class ScheduleStreaming implements Runnable {
-        private boolean isScheduleStreaming = false;
-        private String measureServerUrl;
-        private String measureStreamName;
-        private int measureWidth = 0;
-        private int measureHeight = 0;
-        private boolean isExit = false;
+    private class ScheduleStreaming {
+        private boolean isDuringStartStop = false;
 
         // Schedule streaming
         public void setSchedule() {
-            isScheduleStreaming = true;
+            run();
         }
 
-        /**
-         * End thread
-         */
-        public void exit() {
-            isExit = true;
-        }
-
-        @Override
         public void run() {
-            while(!isExit) {
 
-                // Ignore streaming instructions during streaming preparation.
-                if (!isScheduleStreaming) {
-                    continue;
-                }
+            // Ignore streaming instructions during streaming preparation.
+            if (isDuringStartStop) {
+                return;
+            }
 
-                try {
-                    streaming();
-                } catch (Exception e) {
-                    Timber.i("ScheduleStreaming : " + e.getMessage());
-                } finally {
-                    isScheduleStreaming = false;
-                }
+            try {
+                isDuringStartStop = true;
+                streaming();
+            } catch (Exception e) {
+                Timber.i("ScheduleStreaming : " + e.getMessage());
+            } finally {
+                isDuringStartStop = false;
             }
         }
     }
