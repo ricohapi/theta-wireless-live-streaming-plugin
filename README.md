@@ -1,31 +1,40 @@
-# Wireless Live Streaming plug-in
+# Wireless Live Streaming Plugin
 
-Version: 1.2.2
-
-Wireless Live Streaming plug-in can stream live 360 movie to RTMP server (e.g. YouTube) directly from RICOH THETA.
+## Overview
+Wireless Live Streaming Plugin can stream live 360 movie to YouTube via RTMP directly from RICOH THETA. 
 
 ## History
-* Version 1.2.2 (2022/09/06): Following settings are added for THETA X 1.20 or later.
-                              ・4K (3840 x 2160) 15FPS
-                              ・2K (1920 x 1080) 15FPS
-                              ・1K (1024 x 576) 15FPS
-* Version 1.2.1 (2022/05/26): Support THETA X.
-* Version 1.1.4 (2021/11/02): Removed bitrate measurement function.
-                              RTMPS is supported.
-                              Added 44.8KHz audio sample rate.
-* Version 1.1.1 (2019/05/08): THETA Z1 is supported.
-* Version.1.0.9 (2018/07/23): Initial version.
+* ver 1.2.3 (2023/04/18): Bugfix related to dynamic stitching and zenith correction for THETA X.
+* ver 1.2.2 (2022/09/06): Following settings are added for THETA X 1.20 or later.  
+    * 4K (3840 x 2160) 15FPS  
+    * 2K (1920 x 1080) 15FPS  
+    * 1K (1024 x 576) 15FPS  
+* ver 1.2.0 (2022/02/21): Support THETA X.
+* ver 1.1.4 (2021/11/02): 
+    * Removed bitrate measurement function.
+    * RTMPS is supported.
+    * Added 44.8KHz audio sample rate.
+* ver 1.1.1 (2019/05/08): THETA Z1 is supported.
+* ver.1.0.9 (2018/07/23): Initial version.
 
-## Development Environment
+## Requirement
 
-* RICOH THETA X  (Version 1.20.0)
-* RICOH THETA Z1 (Version 2.10.3)
-* RICOH THETA V  (Version 3.80.2)
+### Supported Device
 
-Tips : How to update your RICOH THETA firmware:
-> * [THETA X](https://support.theta360.com/en/manual/x/content/update/update_01.html)
-> * [THETA Z1](https://support.theta360.com/en/manual/z1/content/update/update_01.html)
-> * [THETA V](https://support.theta360.com/en/manual/v/content/update/update_01.html)
+* RICOH THETA X Version 2.00.0
+* RICOH THETA Z1 Version 2.30.1
+* RICOH THETA V Version 3.82.1
+
+### Development Environment
+
+* Android Studio Chipmunk | 2021.2.1 Patch 2
+    * Windows 10 Version 21H2
+    * macOS Version 13.2.1 Ventura
+* Gradle Plugin Version 4.2.2
+* Gradle Version 6.7.1
+* compileSdkVersion 29
+* minSdkVersion 25
+* targetSdkVersion 25
 
 ## Install
 Android Studio installs apk after building automatically. Or use the following command after build.
@@ -34,13 +43,11 @@ Android Studio installs apk after building automatically. Or use the following c
 adb install -r app-debug.apk
 ```
 
-### Give permissions for this plug-in. (THETA V/Z1 only)
+### Give permissions for this plug-in.
 
   Using desktop viewing with an app as Vysor, open Settings app and turns on the permissions at "Apps"> "Wireless Live Streaming"> "Permissions"
 
 ## How to Use
-
-See also [this article](https://www.thetalab.ricoh/plugin/wireless-live-streaming/) of THETA Lab., how to use Wireless LIVE Streaming plug-in.
 
 If "stream name" can be used repeatedly, plug-in settings (input of "stream name" and "primary server URL") are required only once at the beginning. In this case, you can start streaming just by pressing the shutter button after setting streaming events on YouTube.
 
